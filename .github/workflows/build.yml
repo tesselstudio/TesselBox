@@ -60,29 +60,73 @@ jobs:
           name: macos-build
           path: dist/*
 
-  # Mobile builds disabled - require gomobile and platform-specific setup
-  # build-android:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-go@v5
-  #       with:
-  #         go-version: '1.21'
-  #         cache: false
-  #     - name: Build Android
-  #       run: |
-  #         go mod tidy
-  #         gomobile build -target=android -o dist/tesselbox.apk ./cmd/main.go
-  #
-  # build-ios:
-  #   runs-on: macos-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-go@v5
-  #       with:
-  #         go-version: '1.21'
-  #         cache: false
-  #     - name: Build iOS
-  #       run: |
-  #         go mod tidy
-  #         gomobile build -target=ios -o dist/TesselBox.app ./cmd/main.go
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: false
+      - name: Install Java
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk
+      - name: Download Android SDK
+        run: |
+          curl -L https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o sdk.zip
+          unzip -q sdk.zip -d $HOME/android-sdk
+          rm sdk.zip
+          mkdir -p $HOME/android-sdk/cmdline-tools/latest
+          mv $HOME/android-sdk/cmdline-tools/bin $HOME/android-sdk/cmdline-tools/latest/
+          mv $HOME/android-sdk/cmdline-tools/lib $HOME/android-sdk/cmdline-tools/latest/
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+      - name: Install SDK components
+        run: |
+          export ANDROID_SDK_ROOT=$HOME/android-sdk
+          export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-30" "build-tools;30.0.3" "ndk;25.2.9519653"
+      - name: Install gomobile
+        run: |
+          export PATH=$PATH:$HOME/go/bin
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          gomobile init
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/25.2.9519653
+      - name: Build Android
+        run: |
+          export PATH=$PATH:$HOME/go/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+          gomobile build -target=android -androidapi 30 -o dist/tesselbox.apk ./cmd/main.go
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/25.2.9519653
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: dist/*
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: false
+      - name: Install gomobile
+        run: |
+          export PATH=$PATH:$HOME/go/bin
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          gomobile init
+      - name: Build iOS
+        run: |
+          export PATH=$PATH:$HOME/go/bin
+          gomobile build -target=iossimulator -o dist/TesselBox.app ./cmd/main.go
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: dist/*
