@@ -14,21 +14,18 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-      - name: Install system dependencies
+          cache: false
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libgl1-mesa-dev xorg-dev
-      - name: Download Go modules
-        run: go mod download
-      - name: Build Linux AMD64
+      - name: Build Linux
         run: |
-          mkdir -p dist
-          go build -ldflags="-s -w" -o dist/tesselbox-linux-amd64 ./cmd/main.go
-      - name: Build Linux ARM64
-        run: GOARCH=arm64 go build -ldflags="-s -w" -o dist/tesselbox-linux-arm64 ./cmd/main.go
+          go mod tidy
+          go build -o dist/tesselbox-linux ./cmd/main.go
       - uses: actions/upload-artifact@v4
         with:
-          name: linux-builds
+          name: linux-build
           path: dist/*
 
   build-windows:
@@ -38,15 +35,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-      - name: Build Windows AMD64
-        run: go build -ldflags="-s -w" -o dist/tesselbox-windows-amd64.exe ./cmd/main.go
-      - name: Build Windows ARM64
-        run: |
-          set GOARCH=arm64
-          go build -ldflags="-s -w" -o dist/tesselbox-windows-arm64.exe ./cmd/main.go
+          cache: false
+      - name: Build Windows
+        run: go build -o dist/tesselbox-windows.exe ./cmd/main.go
       - uses: actions/upload-artifact@v4
         with:
-          name: windows-builds
+          name: windows-build
           path: dist/*
 
   build-macos:
@@ -56,15 +50,14 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-      - name: Build macOS AMD64
-        run: GOARCH=amd64 go build -ldflags="-s -w" -o dist/tesselbox-darwin-amd64 ./cmd/main.go
-      - name: Build macOS ARM64
-        run: GOARCH=arm64 go build -ldflags="-s -w" -o dist/tesselbox-darwin-arm64 ./cmd/main.go
-      - name: Create Universal Binary
-        run: lipo -create -output dist/tesselbox-darwin-universal dist/tesselbox-darwin-amd64 dist/tesselbox-darwin-arm64 || true
+          cache: false
+      - name: Build macOS
+        run: |
+          go mod tidy
+          go build -o dist/tesselbox-macos ./cmd/main.go
       - uses: actions/upload-artifact@v4
         with:
-          name: macos-builds
+          name: macos-build
           path: dist/*
 
   build-android:
@@ -74,27 +67,21 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-      - name: Download Go modules
-        run: go mod download
-      - name: Download Android NDK
+          cache: false
+      - name: Download NDK
         run: |
           curl -L https://dl.google.com/android/repository/android-ndk-r25c-linux.zip -o ndk.zip
           unzip -q ndk.zip -d $HOME
           rm ndk.zip
-          echo "ANDROID_NDK_HOME=$HOME/android-ndk-r25c" >> $GITHUB_ENV
-      - name: Install gomobile
+      - name: Build Android
+        env:
+          ANDROID_NDK_HOME: ${{ github.workspace }}/android-ndk-r25c
         run: |
+          export PATH=$PATH:$HOME/go/bin
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
           gomobile init
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
-      - name: Build Android APK
-        run: |
-          mkdir -p dist
           gomobile build -target=android -o dist/tesselbox.apk ./cmd/main.go
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
       - uses: actions/upload-artifact@v4
         with:
           name: android-build
@@ -107,16 +94,13 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-      - name: Download Go modules
-        run: go mod download
-      - name: Install gomobile
+          cache: false
+      - name: Build iOS
         run: |
+          export PATH=$PATH:$HOME/go/bin
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
           gomobile init
-      - name: Build iOS
-        run: |
-          mkdir -p dist
           gomobile build -target=ios -o dist/TesselBox.app ./cmd/main.go
       - uses: actions/upload-artifact@v4
         with:
