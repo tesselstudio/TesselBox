@@ -1,9 +1,8 @@
-name: Build and Release
+name: Build
 
 on:
   push:
     branches: [ main, master ]
-    tags: [ 'v*' ]
   pull_request:
     branches: [ main, master ]
 
@@ -151,22 +150,24 @@ jobs:
         name: ios-build
         path: dist/*
 
-  release:
-    needs: [build-linux, build-windows, build-macos, build-android, build-ios]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: dist
-        merge-multiple: true
-    
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: dist/*
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Release job disabled - only builds artifacts for now
+  # To enable releases, uncomment below and update trigger to include: tags: [ 'v*' ]
+  # release:
+  #   needs: [build-linux, build-windows, build-macos, build-android, build-ios]
+  #   runs-on: ubuntu-latest
+  #   if: startsWith(github.ref, 'refs/tags/')
+  #   steps:
+  #   - name: Download all artifacts
+  #     uses: actions/download-artifact@v4
+  #     with:
+  #       path: dist
+  #       merge-multiple: true
+  #   
+  #   - name: Create Release
+  #     uses: softprops/action-gh-release@v1
+  #     with:
+  #       files: dist/*
+  #       draft: false
+  #       prerelease: false
+  #     env:
+  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
