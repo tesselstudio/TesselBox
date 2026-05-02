@@ -60,24 +60,20 @@ jobs:
           name: macos-build
           path: dist/*
 
-  build-android:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-          cache: false
-      - name: Build Android ARM64
-        run: |
-          go mod tidy
-          GOOS=android GOARCH=arm64 go build -o dist/tesselbox-android-arm64 ./cmd/main.go
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android-build
-          path: dist/*
-
-  # iOS build disabled - requires Apple Developer certificates
+  # Mobile builds disabled - require gomobile and platform-specific setup
+  # build-android:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-go@v5
+  #       with:
+  #         go-version: '1.21'
+  #         cache: false
+  #     - name: Build Android
+  #       run: |
+  #         go mod tidy
+  #         gomobile build -target=android -o dist/tesselbox.apk ./cmd/main.go
+  #
   # build-ios:
   #   runs-on: macos-latest
   #   steps:
@@ -89,8 +85,4 @@ jobs:
   #     - name: Build iOS
   #       run: |
   #         go mod tidy
-  #         GOOS=ios GOARCH=arm64 go build -o dist/tesselbox-ios ./cmd/main.go
-  #     - uses: actions/upload-artifact@v4
-  #       with:
-  #         name: ios-build
-  #         path: dist/*
+  #         gomobile build -target=ios -o dist/TesselBox.app ./cmd/main.go
