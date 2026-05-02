@@ -14,8 +14,8 @@ import (
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/font/gofont/goregular"
 
-	"github.com/tesselstudio/TesselBox-unified/internal/game"
-	"github.com/tesselstudio/TesselBox-unified/pkg/network"
+	"github.com/tesselstudio/TesselBox/internal/game"
+	"github.com/tesselstudio/TesselBox/pkg/network"
 )
 
 type DesktopGame struct {

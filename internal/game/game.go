@@ -10,7 +10,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/font"
 
-	"github.com/tesselstudio/TesselBox-unified/pkg/network"
+	"github.com/tesselstudio/TesselBox/pkg/network"
 )
 
 type OtherPlayer struct {

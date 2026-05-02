@@ -12,7 +12,7 @@ import (
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/font/gofont/goregular"
 
-	"github.com/tesselstudio/TesselBox-unified/internal/game"
+	"github.com/tesselstudio/TesselBox/internal/game"
 )
 
 type MobileGame struct {

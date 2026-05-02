@@ -3,7 +3,7 @@ package main
 import (
 	"runtime"
 
-	"github.com/tesselstudio/TesselBox-unified/pkg/platform"
+	"github.com/tesselstudio/TesselBox/pkg/platform"
 )
 
 func init() {
