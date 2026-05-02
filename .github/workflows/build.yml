@@ -68,17 +68,16 @@ jobs:
         with:
           go-version: '1.21'
           cache: false
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+      - name: Install Java
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk
+          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
       - name: Download NDK
         run: |
           curl -L https://dl.google.com/android/repository/android-ndk-r25c-linux.zip -o ndk.zip
           unzip -q ndk.zip -d $HOME
           rm ndk.zip
-          echo "NDK installed at $HOME/android-ndk-r25c"
       - name: Install gomobile
         run: |
           export PATH=$PATH:$HOME/go/bin
@@ -87,12 +86,14 @@ jobs:
           gomobile init
         env:
           ANDROID_NDK_HOME: $HOME/android-ndk-r25c
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
       - name: Build Android
         run: |
           export PATH=$PATH:$HOME/go/bin
           gomobile build -target=android -o dist/tesselbox.apk ./cmd/main.go
         env:
           ANDROID_NDK_HOME: $HOME/android-ndk-r25c
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
       - uses: actions/upload-artifact@v4
         with:
           name: android-build
