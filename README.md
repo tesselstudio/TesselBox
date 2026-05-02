@@ -1,24 +1,13 @@
 # TesselBox
 
-A hexagonal block-based adventure game with exploration, crafting, combat, and survival elements.
+A hexagonal block-based adventure game with exploration, crafting, combat, survival elements, and **multiplayer support**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build](https://github.com/tesselstudio/TesselBox/actions/workflows/build.yml/badge.svg)](https://github.com/tesselstudio/TesselBox/actions)
 
 ## Overview
 
-TesselBox is an open-source game built with a unique hexagonal grid system. Explore vast worlds, gather resources, craft tools, build structures, and survive against hostile mobs.
-
-## Repository Structure
-
-TesselBox is organized into 5 separate repositories for modularity:
-
-| Repository | Description | Link |
-|------------|-------------|------|
-| **TesselBox-main** | Main documentation and discussion hub | You're here! |
-| **TesselBox-pc** | PC/Desktop version source code | [GitHub](https://github.com/tesselstudio/TesselBox-pc) |
-| **TesselBox-mobile** | Mobile (Android/iOS) version source code | [GitHub](https://github.com/tesselstudio/TesselBox-mobile) |
-| **TesselBox-assets** | Shared game assets and configuration | [GitHub](https://github.com/tesselstudio/TesselBox-assets) |
-| **TesselBox-build** | Unified build scripts and CI/CD | [GitHub](https://github.com/tesselstudio/TesselBox-build) |
+TesselBox is an open-source game built with a unique hexagonal grid system. Explore vast worlds, gather resources, craft tools, build structures, survive against hostile mobs, and **play with friends** in multiplayer mode.
 
 ## Features
 
@@ -28,29 +17,98 @@ TesselBox is organized into 5 separate repositories for modularity:
 - **Survival Mode** - Manage health, hunger, and fend off enemies
 - **Creative Mode** - Build without limits
 - **Dimensions** - Travel between overworld and Randomland
-- **Multi-platform** - Play on PC (Windows/Linux/macOS) or Mobile (Android/iOS)
+- **Multiplayer** - Play with up to 16 players via LAN or direct connection
+- **Cross-Platform** - Play on PC (Windows/Linux/macOS) or Mobile (Android/iOS)
 
-## Getting Started
+## Multiplayer
 
-### Quick Start
+TesselBox now supports multiplayer gaming:
+
+- **UDP** for real-time position updates (50ms sync)
+- **TCP** for reliable messaging (chat, block changes)
+- **LAN Discovery** - Find servers automatically on your local network
+- **Direct Connect** - Connect by IP address
+- **Up to 16 players** per server
+- **PC can host** - Run as dedicated server or host while playing
+- **Mobile support** - Mobile clients can connect to PC servers
+
+### Server Commands (PC)
 
 ```bash
-# Clone all repositories
-git clone https://github.com/tesselstudio/TesselBox-pc.git
-git clone https://github.com/tesselstudio/TesselBox-mobile.git
-git clone https://github.com/tesselstudio/TesselBox-assets.git
-git clone https://github.com/tesselstudio/TesselBox-build.git
+# Run as dedicated server
+./tesselbox --server --port 25565 --name "My Server"
 
-# Build using the unified build system
-cd TesselBox-build
-make pc        # Build PC version
-make mobile    # Build Mobile version
+# Connect to a server
+./tesselbox --connect 192.168.1.100:25565 --player "Player1"
+
+# Enable LAN discovery
+./tesselbox --discover
 ```
 
-### Platform-Specific
+## Building
 
-- **[PC Build](https://github.com/tesselstudio/TesselBox-pc)** - Keyboard and mouse controls
-- **[Mobile Build](https://github.com/tesselstudio/TesselBox-mobile)** - Touch gesture controls
+### Requirements
+
+- Go 1.21 or later
+- For Android: Android SDK and NDK
+- For iOS: macOS with Xcode
+
+### Quick Build
+
+```bash
+# Clone the repository
+git clone https://github.com/tesselstudio/TesselBox.git
+cd TesselBox
+
+# Build for current platform
+go build -o tesselbox ./cmd/main.go
+
+# Or use make to build all platforms
+make build-all
+```
+
+### Platform-Specific Builds
+
+```bash
+# Linux
+make build-linux
+
+# Windows
+make build-windows
+
+# macOS
+make build-macos
+
+# Android APK
+make build-android
+
+# iOS
+make build-ios
+```
+
+### Build Script
+
+```bash
+# Build all platforms
+./scripts/build.sh all
+
+# Build specific platform
+./scripts/build.sh linux
+./scripts/build.sh android
+```
+
+## Running
+
+```bash
+# Run the game
+./tesselbox
+
+# Run as dedicated server
+./tesselbox --server
+
+# Connect to a server
+./tesselbox --connect 192.168.1.100:25565
+```
 
 ## Controls
 
@@ -74,29 +132,71 @@ make mobile    # Build Mobile version
 | Pinch | Zoom |
 | Two-finger tap | Inventory |
 
+## Project Structure
+
+```
+TesselBox/
+├── cmd/                    # Entry points
+│   └── main.go            # Main entry (desktop + mobile)
+├── internal/
+│   └── game/              # Core game logic
+├── pkg/
+│   ├── network/           # Multiplayer networking
+│   │   ├── packet.go      # Packet serialization
+│   │   ├── udp.go         # UDP transport
+│   │   ├── tcp.go         # TCP transport
+│   │   ├── server.go      # Game server
+│   │   ├── client.go      # Network client
+│   │   ├── discovery.go   # LAN discovery
+│   │   └── client_session.go
+│   ├── platform/          # Platform-specific code
+│   │   ├── desktop.go     # PC platform
+│   │   └── mobile.go      # Mobile platform
+│   ├── world/             # World generation
+│   ├── player/            # Player logic
+│   ├── blocks/            # Block definitions
+│   ├── crafting/          # Crafting system
+│   └── ...
+├── config/                # Configuration files
+├── scripts/               # Build scripts
+├── .github/workflows/      # CI/CD
+├── Makefile              # Build automation
+└── go.mod                # Go module
+```
+
 ## Documentation
 
-- [Architecture Overview](docs/ARCHITECTURE.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Security Policy](SECURITY.md)
 
 ## Community
 
-- [Discussions](https://github.com/tesselstudio/TesselBox-main/discussions) - Ask questions, share ideas
-- [Issues](https://github.com/tesselstudio/TesselBox-main/issues) - Report bugs, request features
-- [Wiki](https://github.com/tesselstudio/TesselBox-main/wiki) - Community documentation
+- [Discussions](https://github.com/tesselstudio/TesselBox/discussions) - Ask questions, share ideas
+- [Issues](https://github.com/tesselstudio/TesselBox/issues) - Report bugs, request features
 
 ## Development Status
 
-| Platform | Status |
-|----------|--------|
-| PC (Windows/Linux/macOS) | Active |
-| Mobile (Android/iOS) | Active |
+| Platform | Status | Multiplayer |
+|----------|--------|-------------|
+| PC (Windows/Linux/macOS) | Active | Host + Client |
+| Mobile (Android/iOS) | Active | Client only |
+
+## CI/CD
+
+The project uses GitHub Actions for automated builds:
+
+- **Linux**: AMD64, ARM64
+- **Windows**: AMD64, ARM64
+- **macOS**: AMD64, ARM64, Universal
+- **Android**: APK
+- **iOS**: App bundle
+
+Releases are automatically created when pushing tags (e.g., `v1.0.0`).
 
 ## License
 
-All TesselBox repositories are licensed under the MIT License.
+Licensed under the MIT License.
 
 Copyright (c) 2026 TesselStudio
 
