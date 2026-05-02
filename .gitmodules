@@ -1,0 +1,3 @@
+[submodule "kaiju"]
+	path = kaiju
+	url = https://github.com/kaijuengine/kaiju.git

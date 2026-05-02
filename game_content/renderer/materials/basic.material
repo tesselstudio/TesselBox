@@ -1,0 +1,1 @@
+{"Name":"basic","Shader":"basic.shader","RenderPass":"opaque.renderpass","ShaderPipeline":"basic.shaderpipeline","Textures":[{"Texture":"square.png"}]}
