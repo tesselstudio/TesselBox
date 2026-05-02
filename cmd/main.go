@@ -1,114 +1,111 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"log"
-	"os"
-	"runtime"
+	"reflect"
 
-	"github.com/tesselstudio/TesselBox/pkg/game"
-	"github.com/tesselstudio/TesselBox/pkg/platform"
-	"github.com/tesselstudio/TesselBox/pkg/server"
-
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/tesselstudio/TesselBox/pkg/blocks"
+	"kaijuengine.com/bootstrap"
+	"kaijuengine.com/engine"
+	"kaijuengine.com/engine/assets"
+	"kaijuengine.com/matrix"
+	"kaijuengine.com/registry/shader_data_registry"
+	"kaijuengine.com/rendering"
 )
 
-const (
-	ScreenWidth  = 1280
-	ScreenHeight = 720
-)
-
-// GameWrapper wraps the GameManager for Ebiten compatibility
-type GameWrapper struct {
-	manager      *game.GameManager
-	screenWidth  int
-	screenHeight int
+// TesselBoxGame represents the main game state
+type TesselBoxGame struct {
+	host       *engine.Host
+	testEntity *engine.Entity
+	updateId   engine.UpdateId
 }
 
-func (gw *GameWrapper) Update() error {
-	return gw.manager.Update(1.0 / 60.0)
+// PluginRegistry returns the plugin types for this game
+func (g *TesselBoxGame) PluginRegistry() []reflect.Type {
+	return []reflect.Type{}
 }
 
-func (gw *GameWrapper) Draw(screen *ebiten.Image) {
-	gw.manager.Draw(screen)
+// ContentDatabase returns the game content database
+func (g *TesselBoxGame) ContentDatabase() (assets.Database, error) {
+	// Use file database for game content
+	return assets.NewFileDatabase("game_content")
 }
 
-func (gw *GameWrapper) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return gw.screenWidth, gw.screenHeight
-}
+// Launch initializes the game
+func (g *TesselBoxGame) Launch(host *engine.Host) {
+	g.host = host
 
-func runClient(worldName string, worldSeed int64, creativeMode bool) error {
-	log.Printf("Starting TesselBox client...")
-	log.Printf("World: %s, Seed: %d, Creative: %v", worldName, worldSeed, creativeMode)
+	// Create a hexagonal prism mesh
+	hexPrism := blocks.NewHexPrism(matrix.NewVec3(0, 0, 0), 1.0, 2.0)
+	vertices := hexPrism.GenerateVertices()
+	indices := hexPrism.GenerateIndices()
+	normals := hexPrism.GenerateNormals()
+	uvs := hexPrism.GenerateUVCoordinates()
 
-	// Initialize platform
-	isMobile := runtime.GOOS == "android" || runtime.GOOS == "ios"
-	if isMobile {
-		platform.InitMobile()
-	} else {
-		platform.InitDesktop()
-	}
-
-	// Create game manager
-	gm := game.NewGameManager(worldName, worldSeed, creativeMode, ScreenWidth, ScreenHeight)
-
-	// Create wrapper and run
-	wrapper := &GameWrapper{
-		manager:      gm,
-		screenWidth:  ScreenWidth,
-		screenHeight: ScreenHeight,
-	}
-
-	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
-	ebiten.SetWindowTitle("TesselBox")
-
-	return ebiten.RunGame(wrapper)
-}
-
-func runServer(useTUI bool) error {
-	log.Printf("Starting TesselBox server...")
-
-	srv := server.NewServer(server.DefaultConfig())
-
-	if useTUI {
-		model := server.TUIModel{
-			Server:  srv,
-			Choices: []string{"Start Server", "Exit"},
-			Cursor:  0,
+	// Convert to Kaiju Engine Vertex format
+	meshVertices := make([]rendering.Vertex, len(vertices))
+	for i := 0; i < len(vertices); i++ {
+		meshVertices[i] = rendering.Vertex{
+			Position: vertices[i],
+			Normal:   normals[i],
+			UV0:      uvs[i],
+			Color:    matrix.ColorWhite(),
 		}
-		p := tea.NewProgram(model)
-		_, err := p.Run()
-		return err
 	}
 
-	return srv.Run()
+	// Create mesh from hexagonal prism data
+	mesh := host.MeshCache().Mesh("hex_prism", meshVertices, indices)
+
+	// Create shader data for material
+	sd := shader_data_registry.Create("basic")
+	sd.(*shader_data_registry.ShaderDataStandard).Color = matrix.ColorBlue()
+
+	// Create an entity with transform
+	g.testEntity = engine.NewEntity(host.WorkGroup())
+
+	// Get material and texture from caches
+	mat, err := host.MaterialCache().Material(assets.MaterialDefinitionBasic)
+	if err != nil {
+		panic("Material not found - check asset database path")
+	}
+	tex, err := host.TextureCache().Texture(assets.TextureSquare, rendering.TextureFilterLinear)
+	if err != nil {
+		panic("Texture not found - check asset database path")
+	}
+
+	// Create drawing
+	draw := rendering.Drawing{
+		Material:   mat.CreateInstance([]*rendering.Texture{tex}),
+		Mesh:       mesh,
+		ShaderData: sd,
+		Transform:  &g.testEntity.Transform,
+		ViewCuller: &host.Cameras.Primary,
+	}
+
+	// Add drawing to rendering system
+	host.Drawings.AddDrawing(draw)
+
+	// Register update function for game loop
+	g.updateId = host.Updater.AddUpdate(g.update)
+
+	// Cleanup when entity is destroyed
+	g.testEntity.OnDestroy.Add(func() {
+		sd.Destroy()
+		host.Updater.RemoveUpdate(&g.updateId)
+	})
+}
+
+// Update handles game logic updates
+func (g *TesselBoxGame) update(deltaTime float64) {
+	// Animate test entity
+	x := matrix.Sin(matrix.Float(g.host.Runtime()))
+	g.testEntity.Transform.SetPosition(matrix.NewVec3(x, 0, -3))
+}
+
+// getGame returns the game instance for bootstrap
+func getGame() bootstrap.GameInterface {
+	return &TesselBoxGame{}
 }
 
 func main() {
-	mode := flag.String("mode", "client", "Run mode: client, server")
-	world := flag.String("world", "default", "World name")
-	seed := flag.Int64("seed", 0, "World seed (0 for random)")
-	creative := flag.Bool("creative", false, "Enable creative mode")
-	useTUI := flag.Bool("tui", false, "Use TUI for server")
-	flag.Parse()
-
-	var err error
-	switch *mode {
-	case "client":
-		err = runClient(*world, *seed, *creative)
-	case "server":
-		err = runServer(*useTUI)
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown mode: %s\n", *mode)
-		fmt.Fprintf(os.Stderr, "Usage: %s [-mode=client|server] [options]\n", os.Args[0])
-		os.Exit(1)
-	}
-
-	if err != nil {
-		log.Printf("Error: %v", err)
-		os.Exit(1)
-	}
+	bootstrap.Main(getGame(), nil)
 }
-
