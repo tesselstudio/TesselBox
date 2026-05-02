@@ -68,6 +68,11 @@ jobs:
         with:
           go-version: '1.21'
           cache: false
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
       - name: Download NDK
         run: |
           curl -L https://dl.google.com/android/repository/android-ndk-r25c-linux.zip -o ndk.zip
@@ -81,39 +86,35 @@ jobs:
           go install golang.org/x/mobile/cmd/gobind@latest
           gomobile init
         env:
-          ANDROID_NDK_HOME: ${{ github.workspace }}/android-ndk-r25c
+          ANDROID_NDK_HOME: $HOME/android-ndk-r25c
       - name: Build Android
         run: |
           export PATH=$PATH:$HOME/go/bin
           gomobile build -target=android -o dist/tesselbox.apk ./cmd/main.go
         env:
-          ANDROID_NDK_HOME: ${{ github.workspace }}/android-ndk-r25c
+          ANDROID_NDK_HOME: $HOME/android-ndk-r25c
       - uses: actions/upload-artifact@v4
         with:
           name: android-build
           path: dist/*
 
-  build-ios:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-          cache: false
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-      - name: Install gomobile
-        run: |
-          export PATH=$PATH:$HOME/go/bin
-          go install golang.org/x/mobile/cmd/gomobile@latest
-          go install golang.org/x/mobile/cmd/gobind@latest
-          gomobile init
-      - name: Build iOS
-        run: |
-          export PATH=$PATH:$HOME/go/bin
-          gomobile build -target=ios -o dist/TesselBox.app ./cmd/main.go
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ios-build
-          path: dist/*
+  # iOS build disabled - requires signing certificates
+  # build-ios:
+  #   runs-on: macos-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-go@v5
+  #       with:
+  #         go-version: '1.21'
+  #         cache: false
+  #     - name: Build iOS
+  #       run: |
+  #         export PATH=$PATH:$HOME/go/bin
+  #         go install golang.org/x/mobile/cmd/gomobile@latest
+  #         go install golang.org/x/mobile/cmd/gobind@latest
+  #         gomobile init
+  #         gomobile build -target=ios -o dist/TesselBox.app ./cmd/main.go
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: ios-build
+  #         path: dist/*
