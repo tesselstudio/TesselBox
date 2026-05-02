@@ -1,0 +1,83 @@
+- id: planks
+  name: Wooden Planks
+  description: Craft wooden logs into planks
+  inputs:
+    - item_type: 4
+      quantity: 1
+  outputs:
+    - item_type: 12
+      quantity: 4
+  crafting_time: 0
+  required_tool: 0
+- id: sticks
+  name: Sticks
+  description: Craft planks into sticks
+  inputs:
+    - item_type: 12
+      quantity: 2
+  outputs:
+    - item_type: 13
+      quantity: 4
+  crafting_time: 0
+  required_tool: 0
+- id: workbench
+  name: Workbench
+  description: A crafting station for advanced recipes
+  inputs:
+    - item_type: 12
+      quantity: 4
+  outputs:
+    - item_type: 14
+      quantity: 1
+  crafting_time: 0
+  required_tool: 0
+- id: furnace
+  name: Furnace
+  description: Used for smelting ores
+  inputs:
+    - item_type: 2
+      quantity: 8
+  outputs:
+    - item_type: 15
+      quantity: 1
+  crafting_time: 0
+  required_tool: 0
+- id: wooden_pickaxe
+  name: Wooden Pickaxe
+  description: A basic wooden pickaxe for mining
+  inputs:
+    - item_type: 12
+      quantity: 3
+    - item_type: 13
+      quantity: 2
+  outputs:
+    - item_type: 16
+      quantity: 1
+  crafting_time: 0
+  required_tool: 0
+- id: stone_pickaxe
+  name: Stone Pickaxe
+  description: A sturdy stone pickaxe
+  inputs:
+    - item_type: 2
+      quantity: 3
+    - item_type: 13
+      quantity: 2
+  outputs:
+    - item_type: 17
+      quantity: 1
+  crafting_time: 0
+  required_tool: 0
+- id: iron_pickaxe
+  name: Iron Pickaxe
+  description: A durable iron pickaxe
+  inputs:
+    - item_type: 7
+      quantity: 3
+    - item_type: 13
+      quantity: 2
+  outputs:
+    - item_type: 18
+      quantity: 1
+  crafting_time: 0
+  required_tool: 0

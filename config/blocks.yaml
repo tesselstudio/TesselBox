@@ -1,0 +1,338 @@
+air:
+    id: air
+    name: Air
+    color:
+        - 0
+        - 0
+        - 0
+        - 0
+    hardness: 0
+    transparent: true
+    solid: false
+    collectible: false
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: none
+    ui: {}
+    function: {}
+bedrock:
+    id: bedrock
+    name: Bedrock
+    color:
+        - 30
+        - 30
+        - 30
+        - 255
+    hardness: -1
+    transparent: false
+    solid: true
+    collectible: false
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+brick:
+    id: brick
+    name: Brick
+    color:
+        - 178
+        - 34
+        - 34
+        - 255
+    hardness: 2
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+cactus:
+    id: cactus
+    name: Cactus
+    color:
+        - 34
+        - 139
+        - 34
+        - 255
+    hardness: 0.5
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+coal_ore:
+    id: coal_ore
+    name: Coal Ore
+    color:
+        - 45
+        - 45
+        - 45
+        - 255
+    hardness: 3
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+diamond_ore:
+    id: diamond_ore
+    name: Diamond Ore
+    color:
+        - 0
+        - 255
+        - 255
+        - 255
+    hardness: 3
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+dirt:
+    id: dirt
+    name: Dirt
+    color:
+        - 139
+        - 90
+        - 43
+        - 255
+    colors:
+        - [139, 90, 43, 255]
+        - [120, 80, 40, 255]
+        - [150, 100, 50, 255]
+        - [130, 85, 45, 255]
+    hardness: 1
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+glass:
+    id: glass
+    name: Glass
+    color:
+        - 200
+        - 220
+        - 255
+        - 100
+    hardness: 0.5
+    transparent: true
+    solid: true
+    collectible: true
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+gold_ore:
+    id: gold_ore
+    name: Gold Ore
+    color:
+        - 255
+        - 215
+        - 0
+        - 255
+    hardness: 3
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+grass:
+    id: grass
+    name: Grass Block
+    color:
+        - 100
+        - 200
+        - 100
+        - 255
+    topColor:
+        - 126
+        - 200
+        - 80
+        - 255
+    sideColor:
+        - 95
+        - 150
+        - 30
+        - 255
+    hardness: 1
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+iron_ore:
+    id: iron_ore
+    name: Iron Ore
+    color:
+        - 169
+        - 166
+        - 150
+        - 255
+    hardness: 3
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+leaves:
+    id: leaves
+    name: Leaves
+    color:
+        - 34
+        - 139
+        - 34
+        - 200
+    hardness: 0.5
+    transparent: true
+    solid: true
+    collectible: true
+    flammable: true
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+log:
+    id: log
+    name: Log
+    color:
+        - 139
+        - 69
+        - 19
+        - 255
+    hardness: 2
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: true
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+plank:
+    id: plank
+    name: Wooden Plank
+    color:
+        - 222
+        - 184
+        - 135
+        - 255
+    hardness: 1.5
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: true
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+sand:
+    id: sand
+    name: Sand
+    color:
+        - 238
+        - 214
+        - 175
+        - 255
+    hardness: 0.8
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: false
+    lightLevel: 0
+    gravity: true
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+stone:
+    id: stone
+    name: Stone
+    color:
+        - 169
+        - 169
+        - 169
+        - 255
+    hardness: 2
+    transparent: false
+    solid: true
+    collectible: true
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0
+    pattern: solid
+    ui: {}
+    function: {}
+water:
+    id: water
+    name: Water
+    color:
+        - 64
+        - 164
+        - 223
+        - 180
+    hardness: 0
+    transparent: true
+    solid: false
+    collectible: false
+    flammable: false
+    lightLevel: 0
+    gravity: false
+    viscosity: 0.8
+    pattern: liquid
+    ui: {}
+    function: {}

@@ -1,0 +1,168 @@
+bush:
+    id: bush
+    name: Bush
+    type: bush
+    appearance:
+        color:
+            - 34
+            - 139
+            - 34
+            - 255
+        size:
+            height: 1
+            width: 1
+    properties:
+        attackRange: 0
+        biteDamage: 0
+        damage: 0
+        isHostile: false
+        lureRange: 0
+        maxHealth: 30
+        poisonDuration: 0
+        sporeDamage: 0
+    behavior:
+        berryCount: 3
+        flowerType: ""
+        hasFruit: false
+        leafCount: 0
+        leafType: oak
+        logCount: 0
+    function: {}
+    drops:
+        - leaves
+flower:
+    id: flower
+    name: Flower
+    type: flower
+    appearance:
+        color:
+            - 255
+            - 0
+            - 0
+            - 255
+        size:
+            height: 1
+            width: 1
+    properties:
+        attackRange: 0
+        biteDamage: 0
+        damage: 0
+        isHostile: false
+        lureRange: 0
+        maxHealth: 10
+        poisonDuration: 0
+        sporeDamage: 0
+    behavior:
+        berryCount: 0
+        flowerType: red
+        hasFruit: false
+        leafCount: 0
+        leafType: ""
+        logCount: 0
+    function: {}
+    drops:
+        - flower
+mushroom:
+    id: mushroom
+    name: Mushroom
+    type: mushroom
+    appearance:
+        color:
+            - 255
+            - 255
+            - 255
+            - 255
+        size:
+            height: 1
+            width: 1
+    properties:
+        attackRange: 60
+        biteDamage: 0
+        damage: 5
+        isHostile: true
+        lureRange: 0
+        maxHealth: 25
+        poisonDuration: 5000
+        sporeDamage: 3
+    behavior:
+        berryCount: 0
+        flowerType: ""
+        hasFruit: false
+        leafCount: 0
+        leafType: ""
+        logCount: 0
+    function: {}
+    drops:
+        - mushroom_cap
+        - spores
+tree:
+    id: tree
+    name: Tree
+    type: tree
+    appearance:
+        color:
+            - 139
+            - 69
+            - 19
+            - 255
+        leafColor:
+            - 34
+            - 139
+            - 34
+            - 200
+        size:
+            height: 5
+            width: 1
+    properties:
+        attackRange: 0
+        biteDamage: 0
+        damage: 0
+        isHostile: false
+        lureRange: 0
+        maxHealth: 100
+        poisonDuration: 0
+        sporeDamage: 0
+    behavior:
+        berryCount: 0
+        flowerType: ""
+        hasFruit: false
+        leafCount: 20
+        leafType: ""
+        logCount: 5
+    function: {}
+    drops:
+        - log
+        - leaves
+venus_flytrap:
+    id: venus_flytrap
+    name: Venus Flytrap
+    type: venus_flytrap
+    appearance:
+        color:
+            - 34
+            - 139
+            - 34
+            - 255
+        size:
+            height: 1
+            width: 1
+    properties:
+        attackRange: 80
+        biteDamage: 15
+        damage: 12
+        isHostile: true
+        lureRange: 120
+        maxHealth: 40
+        poisonDuration: 0
+        sporeDamage: 0
+    behavior:
+        berryCount: 0
+        flowerType: ""
+        hasFruit: false
+        leafCount: 0
+        leafType: ""
+        logCount: 0
+    function: {}
+    drops:
+        - venus_gland
+        - teeth

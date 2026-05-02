@@ -11,8 +11,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"golang.org/x/image/font"
-	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/font/gofont/goregular"
+	"golang.org/x/image/font/opentype"
 
 	"github.com/tesselstudio/TesselBox/internal/game"
 	"github.com/tesselstudio/TesselBox/pkg/network"
@@ -135,4 +135,9 @@ func RunDesktop() {
 
 func InitMobile() {
 	log.Fatal("InitMobile called on non-mobile platform")
+}
+
+func InitDesktop() {
+	// Desktop initialization is handled in main.go for unified entry point
+	log.Println("Desktop platform initialized")
 }
