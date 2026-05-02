@@ -192,6 +192,205 @@ func DeserializePacket(data []byte) (*Packet, error) {
 	return p, nil
 }
 
+// SerializePlayerPosition converts PlayerPositionData to bytes
+func SerializePlayerPosition(data *PlayerPositionData) ([]byte, error) {
+	buf := new(bytes.Buffer)
+
+	if err := writeString(buf, data.PlayerID); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, data.X); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, data.Y); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, data.VelocityX); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, data.VelocityY); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// DeserializePlayerPosition parses PlayerPositionData from bytes
+func DeserializePlayerPosition(data []byte) (*PlayerPositionData, error) {
+	buf := bytes.NewReader(data)
+	p := &PlayerPositionData{}
+
+	playerID, err := readString(buf)
+	if err != nil {
+		return nil, err
+	}
+	p.PlayerID = playerID
+
+	if err := binary.Read(buf, binary.LittleEndian, &p.X); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(buf, binary.LittleEndian, &p.Y); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(buf, binary.LittleEndian, &p.VelocityX); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(buf, binary.LittleEndian, &p.VelocityY); err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
+// SerializeBlockChange converts BlockChangeData to bytes
+func SerializeBlockChange(data *BlockChangeData) ([]byte, error) {
+	buf := new(bytes.Buffer)
+
+	if err := binary.Write(buf, binary.LittleEndian, data.X); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, data.Y); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, data.BlockType); err != nil {
+		return nil, err
+	}
+	if err := writeString(buf, data.PlayerID); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// DeserializeBlockChange parses BlockChangeData from bytes
+func DeserializeBlockChange(data []byte) (*BlockChangeData, error) {
+	buf := bytes.NewReader(data)
+	b := &BlockChangeData{}
+
+	if err := binary.Read(buf, binary.LittleEndian, &b.X); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(buf, binary.LittleEndian, &b.Y); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(buf, binary.LittleEndian, &b.BlockType); err != nil {
+		return nil, err
+	}
+
+	playerID, err := readString(buf)
+	if err != nil {
+		return nil, err
+	}
+	b.PlayerID = playerID
+
+	return b, nil
+}
+
+// SerializeChatMessage converts ChatMessageData to bytes
+func SerializeChatMessage(data *ChatMessageData) ([]byte, error) {
+	buf := new(bytes.Buffer)
+
+	if err := writeString(buf, data.PlayerID); err != nil {
+		return nil, err
+	}
+	if err := writeString(buf, data.PlayerName); err != nil {
+		return nil, err
+	}
+	if err := writeString(buf, data.Message); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, data.Timestamp); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// DeserializeChatMessage parses ChatMessageData from bytes
+func DeserializeChatMessage(data []byte) (*ChatMessageData, error) {
+	buf := bytes.NewReader(data)
+	c := &ChatMessageData{}
+
+	playerID, err := readString(buf)
+	if err != nil {
+		return nil, err
+	}
+	c.PlayerID = playerID
+
+	playerName, err := readString(buf)
+	if err != nil {
+		return nil, err
+	}
+	c.PlayerName = playerName
+
+	message, err := readString(buf)
+	if err != nil {
+		return nil, err
+	}
+	c.Message = message
+
+	if err := binary.Read(buf, binary.LittleEndian, &c.Timestamp); err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
+// SerializeServerInfo converts ServerInfoData to bytes
+func SerializeServerInfo(data *ServerInfoData) ([]byte, error) {
+	buf := new(bytes.Buffer)
+
+	if err := writeString(buf, data.Name); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, data.PlayerCount); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, data.MaxPlayers); err != nil {
+		return nil, err
+	}
+	if err := writeString(buf, data.Address); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, data.Port); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// DeserializeServerInfo parses ServerInfoData from bytes
+func DeserializeServerInfo(data []byte) (*ServerInfoData, error) {
+	buf := bytes.NewReader(data)
+	s := &ServerInfoData{}
+
+	name, err := readString(buf)
+	if err != nil {
+		return nil, err
+	}
+	s.Name = name
+
+	if err := binary.Read(buf, binary.LittleEndian, &s.PlayerCount); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(buf, binary.LittleEndian, &s.MaxPlayers); err != nil {
+		return nil, err
+	}
+
+	address, err := readString(buf)
+	if err != nil {
+		return nil, err
+	}
+	s.Address = address
+
+	if err := binary.Read(buf, binary.LittleEndian, &s.Port); err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+// Helper functions for string serialization
 func writeString(buf *bytes.Buffer, s string) error {
 	strBytes := []byte(s)
 	if err := binary.Write(buf, binary.LittleEndian, uint16(len(strBytes))); err != nil {
