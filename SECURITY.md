@@ -6,7 +6,7 @@ If you discover a security vulnerability in TesselBox, please report it responsi
 
 **Do NOT** open a public issue for security vulnerabilities.
 
-Instead, please email: security@tesselstudio.com (placeholder)
+Instead, please email: yishun1015@gmail.com
 
 Include:
 - Description of the vulnerability
