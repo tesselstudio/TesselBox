@@ -2,19 +2,21 @@ name: Build
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, develop ]
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
-          cache: false
+          go-version: '1.25'
+          cache: true
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -22,43 +24,50 @@ jobs:
       - name: Build Linux
         run: |
           go mod tidy
-          go build -o dist/tesselbox-linux ./cmd/main.go
+          go build -ldflags="-s -w" -o dist/tesselbox-linux ./cmd/main.go
       - uses: actions/upload-artifact@v4
         with:
           name: linux-build
           path: dist/*
+          retention-days: 7
 
   build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
-          cache: false
+          go-version: '1.25'
+          cache: true
       - name: Build Windows
-        run: go build -o dist/tesselbox-windows.exe ./cmd/main.go
+        run: go build -ldflags="-s -w" -o dist/tesselbox-windows.exe ./cmd/main.go
       - uses: actions/upload-artifact@v4
         with:
           name: windows-build
           path: dist/*
+          retention-days: 7
 
   build-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
-          cache: false
+          go-version: '1.25'
+          cache: true
       - name: Build macOS
         run: |
           go mod tidy
-          go build -o dist/tesselbox-macos ./cmd/main.go
+          go build -ldflags="-s -w" -o dist/tesselbox-macos ./cmd/main.go
       - uses: actions/upload-artifact@v4
         with:
           name: macos-build
           path: dist/*
+          retention-days: 7
 
   # Mobile builds require local gomobile setup with Android SDK/Xcode
   # See README.md for mobile build instructions

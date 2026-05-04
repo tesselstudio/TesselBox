@@ -1,0 +1,253 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD~1)..HEAD >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: Release ${{ steps.get_version.outputs.version }}
+          body: |
+            ## Changes
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Installation
+
+            ### Linux
+            Download `tesselbox-linux-amd64.tar.gz`, extract and run:
+            ```bash
+            tar -xzf tesselbox-linux-amd64.tar.gz
+            ./tesselbox-linux/tesselbox
+            ```
+
+            ### Windows
+            Download `tesselbox-windows-amd64.zip`, extract and run `tesselbox.exe`.
+
+            ### macOS
+            Download `TesselBox.dmg`, open and drag TesselBox to Applications.
+
+            ## System Requirements
+            - **OS**: Windows 10+, macOS 10.15+, or Linux (Ubuntu 20.04+)
+            - **Graphics**: Vulkan-compatible GPU
+            - **RAM**: 4GB minimum, 8GB recommended
+            - **Storage**: 500MB
+          draft: false
+          prerelease: false
+
+  build-linux:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev xorg-dev
+
+      - name: Build Linux AMD64
+        run: |
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/tesselbox-linux-amd64 ./cmd/main.go
+
+      - name: Package Linux
+        run: |
+          mkdir -p dist/tesselbox-linux
+          cp dist/tesselbox-linux-amd64 dist/tesselbox-linux/tesselbox
+          cp -r game_content dist/tesselbox-linux/
+          cp README.md LICENSE dist/tesselbox-linux/
+          cat > dist/tesselbox-linux/tesselbox.desktop << 'EOF'
+          [Desktop Entry]
+          Name=TesselBox
+          Comment=3D Voxel Adventure Game
+          Exec=tesselbox
+          Icon=tesselbox
+          Type=Application
+          Categories=Game;
+          EOF
+          tar -czf dist/tesselbox-linux-amd64.tar.gz -C dist tesselbox-linux
+
+      - name: Upload Linux Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: dist/tesselbox-linux-amd64.tar.gz
+          asset_name: tesselbox-linux-amd64.tar.gz
+          asset_content_type: application/gzip
+
+  build-windows:
+    needs: create-release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+
+      - name: Build Windows AMD64
+        run: |
+          go build -ldflags="-s -w" -o dist/tesselbox-windows-amd64.exe ./cmd/main.go
+
+      - name: Package Windows
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/tesselbox-windows
+          Copy-Item dist/tesselbox-windows-amd64.exe dist/tesselbox-windows/tesselbox.exe
+          Copy-Item -Recurse game_content dist/tesselbox-windows/
+          Copy-Item README.md dist/tesselbox-windows/
+          Copy-Item LICENSE dist/tesselbox-windows/
+          Compress-Archive -Path dist/tesselbox-windows -DestinationPath dist/tesselbox-windows-amd64.zip -Force
+
+      - name: Upload Windows Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: dist/tesselbox-windows-amd64.zip
+          asset_name: tesselbox-windows-amd64.zip
+          asset_content_type: application/zip
+
+  build-macos:
+    needs: create-release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+
+      - name: Build macOS AMD64
+        run: |
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/tesselbox-darwin-amd64 ./cmd/main.go
+
+      - name: Build macOS ARM64
+        run: |
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/tesselbox-darwin-arm64 ./cmd/main.go
+
+      - name: Create Universal Binary
+        run: |
+          lipo -create dist/tesselbox-darwin-amd64 dist/tesselbox-darwin-arm64 -output dist/tesselbox-darwin-universal
+
+      - name: Create App Bundle
+        run: |
+          mkdir -p dist/TesselBox.app/Contents/MacOS
+          mkdir -p dist/TesselBox.app/Contents/Resources
+          cp dist/tesselbox-darwin-universal dist/TesselBox.app/Contents/MacOS/TesselBox
+          cp -r game_content dist/TesselBox.app/Contents/Resources/
+          cat > dist/TesselBox.app/Contents/Info.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>TesselBox</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.tesselstudio.tesselbox</string>
+              <key>CFBundleName</key>
+              <string>TesselBox</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0.0</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>10.15</string>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Create DMG
+        run: |
+          brew install create-dmg
+          create-dmg \
+            --volname "TesselBox" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --app-drop-link 600 185 \
+            "dist/TesselBox.dmg" \
+            "dist/TesselBox.app"
+
+      - name: Upload macOS Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: dist/TesselBox.dmg
+          asset_name: TesselBox.dmg
+          asset_content_type: application/x-apple-diskimage
+
+  build-checksums:
+    needs: [create-release, build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum *.tar.gz *.zip *.dmg > checksums.txt 2>/dev/null || true
+          cat checksums.txt
+
+      - name: Upload checksums
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: artifacts/checksums.txt
+          asset_name: checksums.txt
+          asset_content_type: text/plain

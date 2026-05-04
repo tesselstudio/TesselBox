@@ -176,6 +176,39 @@ func (ir *ItemRegistry) registerDefaults() {
 			Tags:        []string{"block", "stone", "building"},
 		},
 		{
+			ID:          "dirt",
+			Name:        "Dirt",
+			Type:        ItemTypeBlock,
+			Description: "A block of dirt",
+			MaxStack:    64,
+			Durability:  0,
+			Weight:      2.0,
+			Value:       1,
+			Tags:        []string{"block", "dirt", "building"},
+		},
+		{
+			ID:          "grass",
+			Name:        "Grass Block",
+			Type:        ItemTypeBlock,
+			Description: "A grassy block",
+			MaxStack:    64,
+			Durability:  0,
+			Weight:      2.0,
+			Value:       2,
+			Tags:        []string{"block", "grass", "building"},
+		},
+		{
+			ID:          "glass",
+			Name:        "Glass",
+			Type:        ItemTypeBlock,
+			Description: "A transparent glass block",
+			MaxStack:    64,
+			Durability:  0,
+			Weight:      1.0,
+			Value:       3,
+			Tags:        []string{"block", "glass", "building", "transparent"},
+		},
+		{
 			ID:          "wood",
 			Name:        "Wood",
 			Type:        ItemTypeBlock,
@@ -391,6 +424,46 @@ var GlobalItemRegistry = NewItemRegistry()
 // GetGlobalItemRegistry returns the global item registry
 func GetGlobalItemRegistry() *ItemRegistry {
 	return GlobalItemRegistry
+}
+
+// BlockIDToItemID maps world block IDs to item IDs
+func BlockIDToItemID(blockID uint16) string {
+	switch blockID {
+	case 0: // Air
+		return ""
+	case 1: // Stone
+		return "stone"
+	case 2: // Dirt
+		return "dirt"
+	case 3: // Grass
+		return "grass"
+	case 4: // Wood
+		return "wood"
+	case 5: // Glass
+		return "glass"
+	case 6: // Water
+		return ""
+	default:
+		return ""
+	}
+}
+
+// ItemIDToBlockID maps item IDs to world block IDs
+func ItemIDToBlockID(itemID string) uint16 {
+	switch itemID {
+	case "stone":
+		return 1
+	case "dirt":
+		return 2
+	case "grass":
+		return 3
+	case "wood":
+		return 4
+	case "glass":
+		return 5
+	default:
+		return 0
+	}
 }
 
 // Errors

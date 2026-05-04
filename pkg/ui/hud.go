@@ -161,6 +161,14 @@ func (h *HUD) GetRootPanel() *Panel {
 	return h.rootPanel
 }
 
+// GetHotbar returns the hotbar for slot selection
+func (h *HUD) GetHotbar() *Hotbar {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	return h.hotbar
+}
+
 // ToggleDebug toggles debug information display
 func (h *HUD) ToggleDebug() {
 	h.mu.Lock()

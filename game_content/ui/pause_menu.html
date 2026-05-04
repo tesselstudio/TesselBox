@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			@keyframes fadeIn {
+				from { opacity: 0; }
+				to { opacity: 1; }
+			}
+			@keyframes slideUp {
+				from { opacity: 0; transform: translateY(30px); }
+				to { opacity: 1; transform: translateY(0); }
+			}
+			body {
+				padding: 0;
+				margin: 0;
+				font-family: "Material Icons", sans-serif;
+			}
+			#pauseScreen {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: rgba(0, 0, 0, 0.7);
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				z-index: 2000;
+				animation: fadeIn 0.3s ease-out;
+			}
+			#pauseContainer {
+				width: 400px;
+				padding: 40px;
+				background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+				border: 1px solid rgba(255, 255, 255, 0.3);
+				border-radius: 20px;
+				backdrop-filter: blur(20px);
+				animation: slideUp 0.4s ease-out;
+			}
+			#pauseTitle {
+				font-size: 36px;
+				color: white;
+				font-weight: bold;
+				text-align: center;
+				margin-bottom: 30px;
+				letter-spacing: 3px;
+				text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+			}
+			.menu-button {
+				width: 100%;
+				height: 52px;
+				margin-bottom: 12px;
+				background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+				border: 2px solid rgba(255, 255, 255, 0.2);
+				border-radius: 10px;
+				color: white;
+				font-size: 16px;
+				font-weight: 500;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				text-transform: uppercase;
+				letter-spacing: 1px;
+			}
+			.menu-button:hover {
+				background: linear-gradient(135deg, rgba(233, 69, 96, 0.3) 0%, rgba(233, 69, 96, 0.1) 100%);
+				border-color: rgba(233, 69, 96, 0.6);
+				transform: translateY(-2px);
+			}
+			.menu-button.primary {
+				background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+				border-color: #00d4aa;
+			}
+			.menu-button.primary:hover {
+				background: linear-gradient(135deg, #00f5c4 0%, #00d4aa 100%);
+				border-color: #00f5c4;
+			}
+			.menu-button.danger {
+				background: linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(244, 67, 54, 0.1) 100%);
+				border-color: rgba(244, 67, 54, 0.5);
+			}
+			.menu-button.danger:hover {
+				background: linear-gradient(135deg, rgba(244, 67, 54, 0.5) 0%, rgba(244, 67, 54, 0.2) 100%);
+				border-color: rgba(244, 67, 54, 0.8);
+			}
+			.separator {
+				height: 1px;
+				background: rgba(255, 255, 255, 0.2);
+				margin: 20px 0;
+			}
+			#worldInfo {
+				text-align: center;
+				margin-bottom: 20px;
+				padding-bottom: 20px;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+			}
+			#worldName {
+				font-size: 18px;
+				color: white;
+				font-weight: 500;
+				margin-bottom: 4px;
+			}
+			#worldTime {
+				font-size: 13px;
+				color: rgba(255, 255, 255, 0.5);
+			}
+			/* Settings Panel */
+			#settingsPanel {
+				display: none;
+				animation: slideUp 0.4s ease-out;
+			}
+			#settingsPanel.active {
+				display: block;
+			}
+			#pausePanel {
+				display: block;
+			}
+			#pausePanel.hidden {
+				display: none;
+			}
+			.setting-group {
+				margin-bottom: 20px;
+			}
+			.setting-label {
+				display: block;
+				font-size: 12px;
+				color: rgba(255, 255, 255, 0.7);
+				margin-bottom: 8px;
+				text-transform: uppercase;
+				letter-spacing: 1px;
+			}
+			.slider-container {
+				display: flex;
+				align-items: center;
+				gap: 15px;
+			}
+			.slider {
+				flex: 1;
+				height: 6px;
+				background: rgba(255, 255, 255, 0.2);
+				border-radius: 3px;
+				outline: none;
+				-webkit-appearance: none;
+			}
+			.slider::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				width: 18px;
+				height: 18px;
+				background: linear-gradient(135deg, #e94560 0%, #c73e54 100%);
+				border-radius: 50%;
+				cursor: pointer;
+				transition: transform 0.2s ease;
+			}
+			.slider::-webkit-slider-thumb:hover {
+				transform: scale(1.2);
+			}
+			.slider-value {
+				width: 50px;
+				text-align: center;
+				font-size: 14px;
+				color: white;
+			}
+			.toggle-container {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+			.toggle {
+				width: 50px;
+				height: 26px;
+				background: rgba(255, 255, 255, 0.2);
+				border-radius: 13px;
+				position: relative;
+				cursor: pointer;
+				transition: background 0.3s ease;
+			}
+			.toggle.active {
+				background: #e94560;
+			}
+			.toggle::after {
+				content: '';
+				position: absolute;
+				width: 22px;
+				height: 22px;
+				background: white;
+				border-radius: 50%;
+				top: 2px;
+				left: 2px;
+				transition: transform 0.3s ease;
+			}
+			.toggle.active::after {
+				transform: translateX(24px);
+			}
+			.settings-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 30px;
+			}
+			.settings-title {
+				font-size: 24px;
+				color: white;
+				font-weight: bold;
+			}
+			.back-btn {
+				padding: 8px 16px;
+				background: rgba(255, 255, 255, 0.1);
+				border: 1px solid rgba(255, 255, 255, 0.2);
+				border-radius: 6px;
+				color: white;
+				font-size: 12px;
+				cursor: pointer;
+				transition: all 0.2s ease;
+			}
+			.back-btn:hover {
+				background: rgba(255, 255, 255, 0.2);
+			}
+		</style>
+	</head>
+	<body>
+		<div id="pauseScreen">
+			<div id="pauseContainer">
+				<!-- Pause Menu Panel -->
+				<div id="pausePanel">
+					<div id="pauseTitle">Paused</div>
+					
+					<div id="worldInfo">
+						<div id="worldName">World Name</div>
+						<div id="worldTime">Day 1 - 12:00 PM</div>
+					</div>
+					
+					<button id="btnResume" class="menu-button primary">Resume Game</button>
+					<button id="btnSettings" class="menu-button">Settings</button>
+					<button id="btnSave" class="menu-button">Save Game</button>
+					
+					<div class="separator"></div>
+					
+					<button id="btnQuitToMenu" class="menu-button">Save & Quit to Menu</button>
+					<button id="btnQuitDesktop" class="menu-button danger">Save & Quit to Desktop</button>
+				</div>
+				
+				<!-- Settings Panel -->
+				<div id="settingsPanel">
+					<div class="settings-header">
+						<div class="settings-title">Settings</div>
+						<button id="btnBackFromSettings" class="back-btn">← Back</button>
+					</div>
+					
+					<div class="setting-group">
+						<label class="setting-label">Master Volume</label>
+						<div class="slider-container">
+							<input type="range" id="masterVolume" class="slider" min="0" max="100" value="80" />
+							<span class="slider-value" id="masterVolumeValue">80%</span>
+						</div>
+					</div>
+					
+					<div class="setting-group">
+						<label class="setting-label">Music Volume</label>
+						<div class="slider-container">
+							<input type="range" id="musicVolume" class="slider" min="0" max="100" value="60" />
+							<span class="slider-value" id="musicVolumeValue">60%</span>
+						</div>
+					</div>
+					
+					<div class="setting-group">
+						<label class="setting-label">SFX Volume</label>
+						<div class="slider-container">
+							<input type="range" id="sfxVolume" class="slider" min="0" max="100" value="80" />
+							<span class="slider-value" id="sfxVolumeValue">80%</span>
+						</div>
+					</div>
+					
+					<div class="separator"></div>
+					
+					<div class="setting-group">
+						<div class="toggle-container">
+							<label class="setting-label">V-Sync</label>
+							<div id="toggleVSync" class="toggle active"></div>
+						</div>
+					</div>
+					
+					<div class="setting-group">
+						<div class="toggle-container">
+							<label class="setting-label">Fullscreen</label>
+							<div id="toggleFullscreen" class="toggle"></div>
+						</div>
+					</div>
+					
+					<div class="setting-group">
+						<div class="toggle-container">
+							<label class="setting-label">Show FPS</label>
+							<div id="toggleFps" class="toggle active"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
