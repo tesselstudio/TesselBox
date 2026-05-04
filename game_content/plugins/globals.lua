@@ -413,8 +413,16 @@ function create_obj(self, shallowCopy)
 	--o.__index = self
 	o._extend = nil
 	if #aka > 0 then
-		-- TODO:  Make sure these are unique aka names
-		o.__v_aka = aka
+		-- Ensure unique aka names by deduplicating while preserving order
+		local seen = {}
+		local unique_aka = {}
+		for _, name in ipairs(aka) do
+			if not seen[name] then
+				seen[name] = true
+				table.insert(unique_aka, name)
+			end
+		end
+		o.__v_aka = unique_aka
 	end
 	return o
 end
@@ -770,16 +778,6 @@ Globals = {
 	destroyList = {},
 }
 
--- TODO:  This probably isn't needed since we are no longer on Lua 5.1
----Gives the table a destructor by creating proxy userdata and giving it a __gc.
----The function provided will be the function that is called upon destruction
----@param self table
----@param f function
-function destructor(self, f)
-	self._destructor = newproxy(true)
-	getmetatable(self._destructor).__gc = f
-end
-
 --- Throws a failed assert with not implemented message
 function not_implemented_error()
 	print(debug.traceback())
@@ -841,18 +839,43 @@ end
 ---@param addr string
 ---@return boolean
 function valid_ip_address(addr)
-	-- TODO:  Match IPv6 as well
-	local isValid = addr:match("%d+%.%d+%.%d+%.%d+") ~= nil
-	isValid = isValid or (addr:match("[%a%d][%a%d][%a%d][%a%d]") ~= nil)
+	-- IPv4 pattern: four groups of 1-3 digits separated by dots
+	local isValid = addr:match("^%d%d?%d?%.%d%d?%d?%.%d%d?%d?%.%d%d?%d?$") ~= nil
 	if isValid then
+		-- Validate each octet is 0-255
 		local parts = kstring.split(addr, ".")
 		for i=1, #parts do
-			if #parts[i] > 3 then
-				isValid = false
+			local num = tonumber(parts[i])
+			if num == nil or num > 255 then
+				return false
 			end
 		end
+		return true
 	end
-	return isValid
+	-- IPv6 pattern (simplified): hex groups separated by colons, optionally with :: shorthand
+	-- Full IPv6: 8 groups of 1-4 hex digits
+	if addr:match("^[%x:]+%$") and addr:find(":") then
+		-- Count colons and validate structure
+		local colon_count = 0
+		local double_colon = false
+		for i = 1, #addr do
+			local c = addr:sub(i, i)
+			if c == ":" then
+				colon_count = colon_count + 1
+				if i < #addr and addr:sub(i+1, i+1) == ":" then
+					double_colon = true
+				end
+			elseif not c:match("[%x]") then
+				return false
+			end
+		end
+		-- Valid IPv6 has at most 7 colons (or 2+ for :: shorthand), at least 2 colons
+		-- With :: shorthand, we can have fewer explicit groups
+		if colon_count >= 2 and colon_count <= 7 then
+			return true
+		end
+	end
+	return false
 end
 
 function memorize(f)

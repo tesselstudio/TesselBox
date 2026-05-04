@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, rgba(20, 30, 48, 0.95), rgba(36, 59, 85, 0.95));
+            color: white;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .multiplayer-container {
+            background: rgba(0, 0, 0, 0.4);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 40px;
+            min-width: 500px;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .multiplayer-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 20px;
+        }
+
+        .multiplayer-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #f0f0f0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .multiplayer-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .server-list {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .server-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .server-item:last-child {
+            border-bottom: none;
+        }
+
+        .server-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .server-item.selected {
+            background: rgba(100, 150, 255, 0.3);
+            border-left: 3px solid rgba(100, 150, 255, 0.8);
+        }
+
+        .server-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .server-name {
+            font-weight: bold;
+            color: white;
+            font-size: 14px;
+        }
+
+        .server-address {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4CAF50;
+        }
+
+        .status-dot.offline {
+            background: #f44336;
+        }
+
+        .player-count {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .input-field {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 12px 15px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: rgba(100, 150, 255, 0.8);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, rgba(80, 150, 255, 0.9), rgba(60, 120, 220, 1));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, rgba(100, 170, 255, 1), rgba(80, 140, 240, 1));
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(80, 150, 255, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: rgba(100, 100, 100, 0.5);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, rgba(80, 200, 120, 0.9), rgba(60, 180, 100, 1));
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, rgba(100, 220, 140, 1), rgba(80, 200, 120, 1));
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .connection-status {
+            text-align: center;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .connection-status.show {
+            display: block;
+        }
+
+        .connection-status.connecting {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+            color: #ffc107;
+        }
+
+        .connection-status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            color: #f44336;
+        }
+
+        .connection-status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            color: #4CAF50;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .host-settings {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .setting-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .setting-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .setting-input {
+            width: 100px;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            color: white;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .back-link a:hover {
+            color: white;
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="multiplayer-container">
+        <div class="multiplayer-header">
+            <h1 class="multiplayer-title">Multiplayer</h1>
+            <p class="multiplayer-subtitle">Connect to servers or host your own</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Connect to Server</div>
+            <div class="input-group">
+                <input type="text" class="input-field" id="serverAddress" placeholder="Server IP:Port (e.g., localhost:8080)">
+                <button class="btn btn-primary" id="connectBtn">Connect</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Saved Servers</div>
+            <div class="server-list" id="serverList">
+                <div class="server-item" data-address="localhost:8080">
+                    <div class="server-info">
+                        <div class="server-name">Local Server</div>
+                        <div class="server-address">localhost:8080</div>
+                    </div>
+                    <div class="server-status">
+                        <span class="status-dot offline"></span>
+                        <span class="player-count">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section">
+            <div class="section-title">Host Server</div>
+            <div class="host-settings">
+                <div class="setting-row">
+                    <span class="setting-label">Max Players</span>
+                    <input type="number" class="setting-input" id="maxPlayers" value="8" min="2" max="32">
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Port</span>
+                    <input type="number" class="setting-input" id="hostPort" value="8080" min="1024" max="65535">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-success" id="hostBtn">Host Game</button>
+            </div>
+        </div>
+
+        <div class="connection-status" id="connectionStatus"></div>
+
+        <div class="back-link">
+            <a href="#" id="backBtn">&#8592; Back to Main Menu</a>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let selectedServer = null;
+        let isConnecting = false;
+        let isHosting = false;
+
+        // DOM Elements
+        const serverAddress = document.getElementById('serverAddress');
+        const connectBtn = document.getElementById('connectBtn');
+        const hostBtn = document.getElementById('hostBtn');
+        const backBtn = document.getElementById('backBtn');
+        const serverList = document.getElementById('serverList');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const maxPlayers = document.getElementById('maxPlayers');
+        const hostPort = document.getElementById('hostPort');
+
+        // Load saved servers
+        function loadSavedServers() {
+            // This would load from local storage or config
+            // For now, just the default local server
+        }
+
+        // Show connection status
+        function showStatus(message, type) {
+            connectionStatus.textContent = message;
+            connectionStatus.className = 'connection-status show ' + type;
+        }
+
+        // Hide connection status
+        function hideStatus() {
+            connectionStatus.className = 'connection-status';
+        }
+
+        // Connect to server
+        function connectToServer(address) {
+            if (isConnecting) return;
+
+            isConnecting = true;
+            connectBtn.disabled = true;
+            showStatus('Connecting to ' + address + '...', 'connecting');
+
+            // Call game function to connect
+            if (window.multiplayerConnect) {
+                window.multiplayerConnect(address);
+            }
+
+            // Simulate connection (remove in production)
+            setTimeout(() => {
+                isConnecting = false;
+                connectBtn.disabled = false;
+            }, 2000);
+        }
+
+        // Host server
+        function hostServer() {
+            if (isHosting) return;
+
+            isHosting = true;
+            hostBtn.disabled = true;
+            showStatus('Starting server on port ' + hostPort.value + '...', 'connecting');
+
+            // Call game function to host
+            if (window.multiplayerHost) {
+                window.multiplayerHost({
+                    port: parseInt(hostPort.value),
+                    maxPlayers: parseInt(maxPlayers.value)
+                });
+            }
+
+            // Simulate hosting (remove in production)
+            setTimeout(() => {
+                isHosting = false;
+                hostBtn.disabled = false;
+                showStatus('Server started! Waiting for players...', 'success');
+            }, 1500);
+        }
+
+        // Event Listeners
+        connectBtn.addEventListener('click', () => {
+            const address = serverAddress.value.trim();
+            if (address) {
+                connectToServer(address);
+            } else {
+                showStatus('Please enter a server address', 'error');
+            }
+        });
+
+        hostBtn.addEventListener('click', hostServer);
+
+        backBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (window.multiplayerBack) {
+                window.multiplayerBack();
+            }
+        });
+
+        serverList.addEventListener('click', (e) => {
+            const serverItem = e.target.closest('.server-item');
+            if (serverItem) {
+                // Deselect all
+                document.querySelectorAll('.server-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+
+                // Select clicked
+                serverItem.classList.add('selected');
+                selectedServer = serverItem.dataset.address;
+
+                // Fill address input
+                serverAddress.value = selectedServer;
+            }
+        });
+
+        // Enter key on address field
+        serverAddress.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                connectBtn.click();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (window.multiplayerBack) {
+                    window.multiplayerBack();
+                }
+            }
+        });
+
+        // Expose functions for game integration
+        window.setConnectionStatus = function(status, message) {
+            isConnecting = false;
+            connectBtn.disabled = false;
+            showStatus(message, status);
+        };
+
+        window.updateServerStatus = function(address, online, playerCount) {
+            const serverItem = document.querySelector(`[data-address="${address}"]`);
+            if (serverItem) {
+                const statusDot = serverItem.querySelector('.status-dot');
+                const playerCountEl = serverItem.querySelector('.player-count');
+
+                statusDot.className = 'status-dot' + (online ? '' : ' offline');
+                playerCountEl.textContent = online ? playerCount + '/20' : '--';
+            }
+        };
+
+        // Initialize
+        loadSavedServers();
+    </script>
+</body>
+</html>

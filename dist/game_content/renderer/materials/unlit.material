@@ -1,0 +1,1 @@
+{"Name":"unlit","Shader":"unlit.shader","RenderPass":"opaque.renderpass","ShaderPipeline":"basic.shaderpipeline","Textures":[{"Texture":"square.png","Filter":""}]}

@@ -36,23 +36,23 @@ type RecipePattern [][]string
 
 // RecipeRegistry manages all crafting recipes
 type RecipeRegistry struct {
-	mu       sync.RWMutex
-	recipes  map[string]*Recipe
+	mu         sync.RWMutex
+	recipes    map[string]*Recipe
 	byCategory map[string][]*Recipe
-	shaped   map[string]*Recipe // Shaped recipes by pattern
+	shaped     map[string]*Recipe // Shaped recipes by pattern
 }
 
 // NewRecipeRegistry creates a new recipe registry
 func NewRecipeRegistry() *RecipeRegistry {
 	registry := &RecipeRegistry{
-		recipes:     make(map[string]*Recipe),
-		byCategory:  make(map[string][]*Recipe),
-		shaped:      make(map[string]*Recipe),
+		recipes:    make(map[string]*Recipe),
+		byCategory: make(map[string][]*Recipe),
+		shaped:     make(map[string]*Recipe),
 	}
-	
+
 	// Register default recipes
 	registry.registerDefaults()
-	
+
 	return registry
 }
 
@@ -60,20 +60,20 @@ func NewRecipeRegistry() *RecipeRegistry {
 func (rr *RecipeRegistry) RegisterRecipe(recipe *Recipe) error {
 	rr.mu.Lock()
 	defer rr.mu.Unlock()
-	
+
 	if _, exists := rr.recipes[recipe.ID]; exists {
 		return ErrRecipeAlreadyExists
 	}
-	
+
 	rr.recipes[recipe.ID] = recipe
 	rr.byCategory[recipe.Category] = append(rr.byCategory[recipe.Category], recipe)
-	
+
 	if !recipe.Shapeless {
 		// Register shaped recipe pattern
 		pattern := rr.generatePattern(recipe)
 		rr.shaped[pattern] = recipe
 	}
-	
+
 	return nil
 }
 
@@ -81,7 +81,7 @@ func (rr *RecipeRegistry) RegisterRecipe(recipe *Recipe) error {
 func (rr *RecipeRegistry) GetRecipe(id string) (*Recipe, bool) {
 	rr.mu.RLock()
 	defer rr.mu.RUnlock()
-	
+
 	recipe, exists := rr.recipes[id]
 	return recipe, exists
 }
@@ -90,10 +90,10 @@ func (rr *RecipeRegistry) GetRecipe(id string) (*Recipe, bool) {
 func (rr *RecipeRegistry) GetRecipesByCategory(category string) []*Recipe {
 	rr.mu.RLock()
 	defer rr.mu.RUnlock()
-	
+
 	recipes := make([]*Recipe, len(rr.byCategory[category]))
 	copy(recipes, rr.byCategory[category])
-	
+
 	return recipes
 }
 
@@ -101,12 +101,12 @@ func (rr *RecipeRegistry) GetRecipesByCategory(category string) []*Recipe {
 func (rr *RecipeRegistry) GetAllRecipes() []*Recipe {
 	rr.mu.RLock()
 	defer rr.mu.RUnlock()
-	
+
 	recipes := make([]*Recipe, 0, len(rr.recipes))
 	for _, recipe := range rr.recipes {
 		recipes = append(recipes, recipe)
 	}
-	
+
 	return recipes
 }
 
@@ -114,20 +114,20 @@ func (rr *RecipeRegistry) GetAllRecipes() []*Recipe {
 func (rr *RecipeRegistry) FindRecipe(grid []*ItemStack, gridSize int) *Recipe {
 	rr.mu.RLock()
 	defer rr.mu.RUnlock()
-	
+
 	// Try shaped recipes first
 	pattern := rr.generateGridPattern(grid, gridSize)
 	if recipe, exists := rr.shaped[pattern]; exists {
 		return recipe
 	}
-	
+
 	// Try shapeless recipes
 	for _, recipe := range rr.recipes {
 		if recipe.Shapeless && rr.matchesShapelessRecipe(recipe, grid) {
 			return recipe
 		}
 	}
-	
+
 	return nil
 }
 
@@ -140,7 +140,7 @@ func (rr *RecipeRegistry) matchesShapelessRecipe(recipe *Recipe, grid []*ItemSta
 			gridIngredients[stack.Item.ID] += stack.Quantity
 		}
 	}
-	
+
 	// Check recipe ingredients
 	for _, ingredient := range recipe.Ingredients {
 		if !ingredient.Optional {
@@ -150,14 +150,14 @@ func (rr *RecipeRegistry) matchesShapelessRecipe(recipe *Recipe, grid []*ItemSta
 			gridIngredients[ingredient.ItemID] -= ingredient.Quantity
 		}
 	}
-	
+
 	// Check for extra ingredients (should be none for exact match)
 	for _, count := range gridIngredients {
 		if count > 0 {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -203,8 +203,8 @@ func (rr *RecipeRegistry) registerDefaults() {
 			},
 			Shapeless: false,
 			GridSize:  3,
-			Category: "tools",
-			Tags:     []string{"tool", "pickaxe", "wooden"},
+			Category:  "tools",
+			Tags:      []string{"tool", "pickaxe", "wooden"},
 		},
 		{
 			ID:          "stone_pickaxe",
@@ -220,8 +220,8 @@ func (rr *RecipeRegistry) registerDefaults() {
 			},
 			Shapeless: false,
 			GridSize:  3,
-			Category: "tools",
-			Tags:     []string{"tool", "pickaxe", "stone"},
+			Category:  "tools",
+			Tags:      []string{"tool", "pickaxe", "stone"},
 		},
 		{
 			ID:          "iron_pickaxe",
@@ -237,8 +237,8 @@ func (rr *RecipeRegistry) registerDefaults() {
 			},
 			Shapeless: false,
 			GridSize:  3,
-			Category: "tools",
-			Tags:     []string{"tool", "pickaxe", "iron"},
+			Category:  "tools",
+			Tags:      []string{"tool", "pickaxe", "iron"},
 		},
 		{
 			ID:          "diamond_pickaxe",
@@ -254,10 +254,10 @@ func (rr *RecipeRegistry) registerDefaults() {
 			},
 			Shapeless: false,
 			GridSize:  3,
-			Category: "tools",
-			Tags:     []string{"tool", "pickaxe", "diamond"},
+			Category:  "tools",
+			Tags:      []string{"tool", "pickaxe", "diamond"},
 		},
-		
+
 		// Weapons
 		{
 			ID:          "wooden_sword",
@@ -273,8 +273,8 @@ func (rr *RecipeRegistry) registerDefaults() {
 			},
 			Shapeless: false,
 			GridSize:  3,
-			Category: "weapons",
-			Tags:     []string{"weapon", "sword", "wooden"},
+			Category:  "weapons",
+			Tags:      []string{"weapon", "sword", "wooden"},
 		},
 		{
 			ID:          "iron_sword",
@@ -290,10 +290,10 @@ func (rr *RecipeRegistry) registerDefaults() {
 			},
 			Shapeless: false,
 			GridSize:  3,
-			Category: "weapons",
-			Tags:     []string{"weapon", "sword", "iron"},
+			Category:  "weapons",
+			Tags:      []string{"weapon", "sword", "iron"},
 		},
-		
+
 		// Smelting (shapeless recipes for simplicity)
 		{
 			ID:          "iron_ingot_from_ore",
@@ -308,10 +308,10 @@ func (rr *RecipeRegistry) registerDefaults() {
 			},
 			Shapeless: true,
 			GridSize:  1,
-			Category: "smelting",
-			Tags:     []string{"smelting", "metal"},
+			Category:  "smelting",
+			Tags:      []string{"smelting", "metal"},
 		},
-		
+
 		// Building blocks
 		{
 			ID:          "wood_planks",
@@ -326,10 +326,10 @@ func (rr *RecipeRegistry) registerDefaults() {
 			},
 			Shapeless: true,
 			GridSize:  1,
-			Category: "building",
-			Tags:     []string{"building", "wood"},
+			Category:  "building",
+			Tags:      []string{"building", "wood"},
 		},
-		
+
 		// Food
 		{
 			ID:          "bread",
@@ -344,10 +344,10 @@ func (rr *RecipeRegistry) registerDefaults() {
 			},
 			Shapeless: true,
 			GridSize:  3,
-			Category: "food",
-			Tags:     []string{"food", "prepared"},
+			Category:  "food",
+			Tags:      []string{"food", "prepared"},
 		},
-		
+
 		// Armor
 		{
 			ID:          "leather_helmet",
@@ -362,8 +362,8 @@ func (rr *RecipeRegistry) registerDefaults() {
 			},
 			Shapeless: false,
 			GridSize:  3,
-			Category: "armor",
-			Tags:     []string{"armor", "helmet", "leather"},
+			Category:  "armor",
+			Tags:      []string{"armor", "helmet", "leather"},
 		},
 		{
 			ID:          "iron_chestplate",
@@ -378,15 +378,15 @@ func (rr *RecipeRegistry) registerDefaults() {
 			},
 			Shapeless: false,
 			GridSize:  3,
-			Category: "armor",
-			Tags:     []string{"armor", "chestplate", "iron"},
+			Category:  "armor",
+			Tags:      []string{"armor", "chestplate", "iron"},
 		},
 	}
-	
+
 	for _, recipe := range defaultRecipes {
 		rr.recipes[recipe.ID] = recipe
 		rr.byCategory[recipe.Category] = append(rr.byCategory[recipe.Category], recipe)
-		
+
 		if !recipe.Shapeless {
 			pattern := rr.generatePattern(recipe)
 			rr.shaped[pattern] = recipe
@@ -397,14 +397,14 @@ func (rr *RecipeRegistry) registerDefaults() {
 // CraftingManager manages the crafting system
 type CraftingManager struct {
 	recipeRegistry *RecipeRegistry
-	itemRegistry  *ItemRegistry
+	itemRegistry   *ItemRegistry
 }
 
 // NewCraftingManager creates a new crafting manager
 func NewCraftingManager() *CraftingManager {
 	return &CraftingManager{
 		recipeRegistry: NewRecipeRegistry(),
-		itemRegistry:  GetGlobalItemRegistry(),
+		itemRegistry:   GetGlobalItemRegistry(),
 	}
 }
 
@@ -419,27 +419,31 @@ func (cm *CraftingManager) GetItemRegistry() *ItemRegistry {
 }
 
 // Craft attempts to craft an item using the given ingredients
-func (cm *CraftingManager) Craft(grid []*ItemStack, gridSize int) (*ItemStack, error) {
+// Returns the result item and the modified grid (with consumed ingredients removed)
+func (cm *CraftingManager) Craft(grid []*ItemStack, gridSize int) (*ItemStack, []*ItemStack, error) {
 	recipe := cm.recipeRegistry.FindRecipe(grid, gridSize)
 	if recipe == nil {
-		return nil, ErrNoRecipeFound
+		return nil, grid, ErrNoRecipeFound
 	}
-	
+
 	// Check if we have all required ingredients
 	if !cm.hasIngredients(recipe, grid) {
-		return nil, ErrInsufficientIngredients
+		return nil, grid, ErrInsufficientIngredients
 	}
-	
+
 	// Create result item
 	item, exists := cm.itemRegistry.GetItem(recipe.Result.ItemID)
 	if !exists {
-		return nil, ErrItemNotFound
+		return nil, grid, ErrItemNotFound
 	}
-	
+
 	result := NewItemStack(item, recipe.Result.Quantity)
 	result.Damage = recipe.Result.Damage
-	
-	return result, nil
+
+	// Consume ingredients
+	grid = cm.ConsumeIngredients(recipe, grid)
+
+	return result, grid, nil
 }
 
 // hasIngredients checks if the grid contains all required ingredients
@@ -451,7 +455,7 @@ func (cm *CraftingManager) hasIngredients(recipe *Recipe, grid []*ItemStack) boo
 			gridIngredients[stack.Item.ID] += stack.Quantity
 		}
 	}
-	
+
 	// Check recipe ingredients
 	for _, ingredient := range recipe.Ingredients {
 		if !ingredient.Optional {
@@ -460,14 +464,45 @@ func (cm *CraftingManager) hasIngredients(recipe *Recipe, grid []*ItemStack) boo
 			}
 		}
 	}
-	
+
 	return true
 }
 
-// ConsumeIngredients consumes the ingredients for a recipe
+// ConsumeIngredients consumes the ingredients for a recipe from the crafting grid
 func (cm *CraftingManager) ConsumeIngredients(recipe *Recipe, grid []*ItemStack) []*ItemStack {
-	// This would modify the grid to remove consumed ingredients
-	// For now, return the modified grid
+	// Track what we need to consume
+	remainingIngredients := make(map[string]int)
+	for _, ingredient := range recipe.Ingredients {
+		if !ingredient.Optional {
+			remainingIngredients[ingredient.ItemID] += ingredient.Quantity
+		}
+	}
+
+	// Consume from each slot
+	for i, stack := range grid {
+		if stack == nil || stack.IsEmpty() {
+			continue
+		}
+
+		needed, exists := remainingIngredients[stack.Item.ID]
+		if !exists || needed <= 0 {
+			continue
+		}
+
+		// Consume from this stack
+		if stack.Quantity >= needed {
+			stack.Quantity -= needed
+			remainingIngredients[stack.Item.ID] = 0
+			if stack.Quantity <= 0 {
+				grid[i] = nil
+			}
+		} else {
+			remainingIngredients[stack.Item.ID] -= stack.Quantity
+			stack.Quantity = 0
+			grid[i] = nil
+		}
+	}
+
 	return grid
 }
 
@@ -481,10 +516,10 @@ func GetGlobalCraftingManager() *CraftingManager {
 
 // Errors
 var (
-	ErrRecipeAlreadyExists        = &RecipeError{Message: "recipe already exists"}
-	ErrNoRecipeFound             = &RecipeError{Message: "no recipe found"}
-	ErrInsufficientIngredients   = &RecipeError{Message: "insufficient ingredients"}
-	ErrInvalidRecipe             = &RecipeError{Message: "invalid recipe"}
+	ErrRecipeAlreadyExists     = &RecipeError{Message: "recipe already exists"}
+	ErrNoRecipeFound           = &RecipeError{Message: "no recipe found"}
+	ErrInsufficientIngredients = &RecipeError{Message: "insufficient ingredients"}
+	ErrInvalidRecipe           = &RecipeError{Message: "invalid recipe"}
 )
 
 // RecipeError represents a recipe-related error

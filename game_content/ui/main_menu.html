@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			@keyframes gradientShift {
+				0% { background-position: 0% 50%; }
+				50% { background-position: 100% 50%; }
+				100% { background-position: 0% 50%; }
+			}
+			@keyframes float {
+				0%, 100% { transform: translateY(0px); }
+				50% { transform: translateY(-20px); }
+			}
+			@keyframes pulse {
+				0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(233, 69, 96, 0.5)); }
+				50% { transform: scale(1.05); filter: drop-shadow(0 0 30px rgba(233, 69, 96, 0.8)); }
+			}
+			@keyframes fadeIn {
+				from { opacity: 0; transform: translateY(20px); }
+				to { opacity: 1; transform: translateY(0); }
+			}
+			@keyframes glow {
+				0%, 100% { box-shadow: 0 0 20px rgba(233, 69, 96, 0.4); }
+				50% { box-shadow: 0 0 40px rgba(233, 69, 96, 0.8); }
+			}
+			@keyframes blockFloat {
+				0%, 100% { transform: translateY(0) rotate(0deg); }
+				25% { transform: translateY(-30px) rotate(5deg); }
+				50% { transform: translateY(-10px) rotate(-3deg); }
+				75% { transform: translateY(-40px) rotate(8deg); }
+			}
+			body {
+				padding: 0;
+				margin: 0;
+				font-family: "Material Icons", sans-serif;
+			}
+			#mainMenuScreen {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+				background-size: 400% 400%;
+				animation: gradientShift 20s ease infinite;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				z-index: 1000;
+				overflow: hidden;
+			}
+			#backgroundBlocks {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				pointer-events: none;
+				z-index: 1;
+			}
+			.block {
+				position: absolute;
+				width: 60px;
+				height: 60px;
+				background: linear-gradient(135deg, rgba(233, 69, 96, 0.3) 0%, rgba(0, 212, 170, 0.3) 100%);
+				border: 2px solid rgba(255, 255, 255, 0.2);
+				border-radius: 8px;
+				animation: blockFloat 8s ease-in-out infinite;
+			}
+			.block:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+			.block:nth-child(2) { top: 20%; right: 15%; animation-delay: 1s; }
+			.block:nth-child(3) { bottom: 30%; left: 20%; animation-delay: 2s; }
+			.block:nth-child(4) { top: 40%; right: 10%; animation-delay: 3s; }
+			.block:nth-child(5) { bottom: 20%; right: 25%; animation-delay: 4s; }
+			.block:nth-child(6) { top: 60%; left: 5%; animation-delay: 5s; }
+			#logoContainer {
+				text-align: center;
+				margin-bottom: 40px;
+				z-index: 10;
+			}
+			#gameLogo {
+				width: 120px;
+				height: 120px;
+				object-fit: contain;
+				filter: drop-shadow(0 0 30px rgba(233, 69, 96, 0.8));
+				animation: pulse 3s ease-in-out infinite;
+			}
+			#gameTitle {
+				font-size: 56px;
+				color: white;
+				font-weight: bold;
+				margin-top: 20px;
+				text-shadow: 0 0 20px rgba(233, 69, 96, 0.8);
+				letter-spacing: 4px;
+				animation: fadeIn 1s ease-out;
+			}
+			#gameSubtitle {
+				font-size: 16px;
+				color: rgba(255, 255, 255, 0.6);
+				margin-top: 8px;
+				letter-spacing: 6px;
+				text-transform: uppercase;
+			}
+			#menuContainer {
+				width: 350px;
+				z-index: 10;
+			}
+			.menu-button {
+				width: 100%;
+				height: 56px;
+				margin-bottom: 16px;
+				background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+				border: 2px solid rgba(255, 255, 255, 0.2);
+				border-radius: 12px;
+				color: white;
+				font-size: 18px;
+				font-weight: 500;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				text-transform: uppercase;
+				letter-spacing: 2px;
+				backdrop-filter: blur(10px);
+				animation: fadeIn 1s ease-out;
+				animation-fill-mode: both;
+			}
+			.menu-button:nth-child(1) { animation-delay: 0.2s; }
+			.menu-button:nth-child(2) { animation-delay: 0.4s; }
+			.menu-button:nth-child(3) { animation-delay: 0.6s; }
+			.menu-button:nth-child(4) { animation-delay: 0.8s; }
+			.menu-button:hover {
+				background: linear-gradient(135deg, rgba(233, 69, 96, 0.3) 0%, rgba(233, 69, 96, 0.1) 100%);
+				border-color: rgba(233, 69, 96, 0.6);
+				transform: translateY(-3px);
+				box-shadow: 0 8px 25px rgba(233, 69, 96, 0.4);
+			}
+			.menu-button.primary {
+				background: linear-gradient(135deg, #e94560 0%, #c73e54 100%);
+				border-color: #e94560;
+				animation: glow 2s ease-in-out infinite;
+			}
+			.menu-button.primary:hover {
+				background: linear-gradient(135deg, #ff6b6b 0%, #e94560 100%);
+				border-color: #ff6b6b;
+			}
+			#versionInfo {
+				position: absolute;
+				bottom: 20px;
+				left: 20px;
+				font-size: 12px;
+				color: rgba(255, 255, 255, 0.4);
+				z-index: 10;
+			}
+			#copyright {
+				position: absolute;
+				bottom: 20px;
+				right: 20px;
+				font-size: 12px;
+				color: rgba(255, 255, 255, 0.4);
+				z-index: 10;
+			}
+			.corner-decoration {
+				position: absolute;
+				width: 100px;
+				height: 100px;
+				border: 3px solid rgba(233, 69, 96, 0.3);
+				z-index: 5;
+			}
+			.corner-decoration.top-left {
+				top: 30px;
+				left: 30px;
+				border-right: none;
+				border-bottom: none;
+				border-radius: 15px 0 0 0;
+			}
+			.corner-decoration.top-right {
+				top: 30px;
+				right: 30px;
+				border-left: none;
+				border-bottom: none;
+				border-radius: 0 15px 0 0;
+			}
+			.corner-decoration.bottom-left {
+				bottom: 30px;
+				left: 30px;
+				border-right: none;
+				border-top: none;
+				border-radius: 0 0 0 15px;
+			}
+			.corner-decoration.bottom-right {
+				bottom: 30px;
+				right: 30px;
+				border-left: none;
+				border-top: none;
+				border-radius: 0 0 15px 0;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="mainMenuScreen">
+			<div class="corner-decoration top-left"></div>
+			<div class="corner-decoration top-right"></div>
+			<div class="corner-decoration bottom-left"></div>
+			<div class="corner-decoration bottom-right"></div>
+			
+			<div id="backgroundBlocks">
+				<div class="block"></div>
+				<div class="block"></div>
+				<div class="block"></div>
+				<div class="block"></div>
+				<div class="block"></div>
+				<div class="block"></div>
+			</div>
+			
+			<div id="logoContainer">
+				<img id="gameLogo" src="textures/kiaju-icon.png" alt="TesselBox Logo" />
+				<div id="gameTitle">TesselBox</div>
+				<div id="gameSubtitle">3D Voxel Adventure</div>
+			</div>
+			
+			<div id="menuContainer">
+				<button id="btnSinglePlayer" class="menu-button primary">Single Player</button>
+				<button id="btnMultiplayer" class="menu-button">Multiplayer</button>
+				<button id="btnSettings" class="menu-button">Settings</button>
+				<button id="btnQuit" class="menu-button">Quit</button>
+			</div>
+			
+			<div id="versionInfo">v1.0.0 - Kaiju Engine</div>
+			<div id="copyright">© 2026 TesselStudio</div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			@keyframes gradientShift {
+				0% { background-position: 0% 50%; }
+				50% { background-position: 100% 50%; }
+				100% { background-position: 0% 50%; }
+			}
+			@keyframes fadeIn {
+				from { opacity: 0; transform: translateY(20px); }
+				to { opacity: 1; transform: translateY(0); }
+			}
+			@keyframes slideIn {
+				from { opacity: 0; transform: translateX(-30px); }
+				to { opacity: 1; transform: translateX(0); }
+			}
+			body {
+				padding: 0;
+				margin: 0;
+				font-family: "Material Icons", sans-serif;
+			}
+			#worldSelectScreen {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+				background-size: 400% 400%;
+				animation: gradientShift 20s ease infinite;
+				display: flex;
+				flex-direction: column;
+				padding: 40px;
+				box-sizing: border-box;
+				z-index: 1000;
+			}
+			#header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 30px;
+				animation: fadeIn 0.5s ease-out;
+			}
+			#title {
+				font-size: 36px;
+				color: white;
+				font-weight: bold;
+				letter-spacing: 2px;
+			}
+			#backButton {
+				padding: 12px 24px;
+				background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+				border: 2px solid rgba(255, 255, 255, 0.2);
+				border-radius: 8px;
+				color: white;
+				font-size: 14px;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				text-transform: uppercase;
+				letter-spacing: 1px;
+			}
+			#backButton:hover {
+				background: linear-gradient(135deg, rgba(233, 69, 96, 0.3) 0%, rgba(233, 69, 96, 0.1) 100%);
+				border-color: rgba(233, 69, 96, 0.6);
+				transform: translateY(-2px);
+			}
+			#worldList {
+				flex: 1;
+				overflow-y: auto;
+				margin-bottom: 20px;
+			}
+			.world-item {
+				display: flex;
+				align-items: center;
+				padding: 20px;
+				margin-bottom: 12px;
+				background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+				border: 2px solid rgba(255, 255, 255, 0.1);
+				border-radius: 12px;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				animation: slideIn 0.5s ease-out;
+				animation-fill-mode: both;
+			}
+			.world-item:hover {
+				background: linear-gradient(135deg, rgba(233, 69, 96, 0.2) 0%, rgba(233, 69, 96, 0.1) 100%);
+				border-color: rgba(233, 69, 96, 0.4);
+				transform: translateX(10px);
+			}
+			.world-item.selected {
+				background: linear-gradient(135deg, rgba(233, 69, 96, 0.3) 0%, rgba(233, 69, 96, 0.15) 100%);
+				border-color: #e94560;
+			}
+			.world-icon {
+				width: 60px;
+				height: 60px;
+				background: linear-gradient(135deg, #e94560 0%, #c73e54 100%);
+				border-radius: 8px;
+				margin-right: 20px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 24px;
+				color: white;
+			}
+			.world-info {
+				flex: 1;
+			}
+			.world-name {
+				font-size: 20px;
+				color: white;
+				font-weight: 500;
+				margin-bottom: 4px;
+			}
+			.world-details {
+				font-size: 13px;
+				color: rgba(255, 255, 255, 0.5);
+			}
+			.world-actions {
+				display: flex;
+				gap: 10px;
+			}
+			.action-btn {
+				padding: 8px 16px;
+				background: rgba(255, 255, 255, 0.1);
+				border: 1px solid rgba(255, 255, 255, 0.2);
+				border-radius: 6px;
+				color: white;
+				font-size: 12px;
+				cursor: pointer;
+				transition: all 0.2s ease;
+			}
+			.action-btn:hover {
+				background: rgba(255, 255, 255, 0.2);
+			}
+			.action-btn.danger:hover {
+				background: rgba(244, 67, 54, 0.3);
+				border-color: rgba(244, 67, 54, 0.5);
+			}
+			#bottomBar {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding-top: 20px;
+				border-top: 1px solid rgba(255, 255, 255, 0.1);
+				animation: fadeIn 0.6s ease-out;
+			}
+			#createWorldBtn {
+				padding: 16px 32px;
+				background: linear-gradient(135deg, #e94560 0%, #c73e54 100%);
+				border: none;
+				border-radius: 10px;
+				color: white;
+				font-size: 16px;
+				font-weight: bold;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				text-transform: uppercase;
+				letter-spacing: 1px;
+			}
+			#createWorldBtn:hover {
+				background: linear-gradient(135deg, #ff6b6b 0%, #e94560 100%);
+				transform: translateY(-2px);
+				box-shadow: 0 8px 25px rgba(233, 69, 96, 0.4);
+			}
+			#playBtn {
+				padding: 16px 48px;
+				background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+				border: none;
+				border-radius: 10px;
+				color: white;
+				font-size: 18px;
+				font-weight: bold;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				text-transform: uppercase;
+				letter-spacing: 2px;
+			}
+			#playBtn:hover:not(:disabled) {
+				background: linear-gradient(135deg, #00f5c4 0%, #00d4aa 100%);
+				transform: translateY(-2px);
+				box-shadow: 0 8px 25px rgba(0, 212, 170, 0.4);
+			}
+			#playBtn:disabled {
+				opacity: 0.5;
+				cursor: not-allowed;
+			}
+			#emptyState {
+				text-align: center;
+				padding: 60px 20px;
+				color: rgba(255, 255, 255, 0.5);
+			}
+			#emptyStateIcon {
+				font-size: 64px;
+				margin-bottom: 20px;
+				opacity: 0.3;
+			}
+			#emptyStateText {
+				font-size: 18px;
+				margin-bottom: 10px;
+			}
+			#emptyStateSubtext {
+				font-size: 14px;
+				opacity: 0.7;
+			}
+			/* Create World Modal */
+			.modal-overlay {
+				display: none;
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: rgba(0, 0, 0, 0.8);
+				z-index: 2000;
+				justify-content: center;
+				align-items: center;
+			}
+			.modal-overlay.active {
+				display: flex;
+			}
+			.modal {
+				width: 450px;
+				padding: 40px;
+				background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+				border: 1px solid rgba(255, 255, 255, 0.3);
+				border-radius: 20px;
+				backdrop-filter: blur(20px);
+			}
+			.modal-title {
+				font-size: 28px;
+				color: white;
+				font-weight: bold;
+				margin-bottom: 30px;
+				text-align: center;
+			}
+			.form-group {
+				margin-bottom: 20px;
+			}
+			.form-label {
+				display: block;
+				font-size: 12px;
+				color: rgba(255, 255, 255, 0.7);
+				margin-bottom: 8px;
+				text-transform: uppercase;
+				letter-spacing: 1px;
+			}
+			.form-input {
+				width: 100%;
+				height: 48px;
+				padding: 0 16px;
+				background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+				border: 2px solid rgba(255, 255, 255, 0.2);
+				border-radius: 10px;
+				color: white;
+				font-size: 16px;
+				box-sizing: border-box;
+				transition: all 0.3s ease;
+			}
+			.form-input:focus {
+				outline: none;
+				border-color: #e94560;
+				background: linear-gradient(135deg, rgba(233, 69, 96, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%);
+			}
+			.form-input::placeholder {
+				color: rgba(255, 255, 255, 0.3);
+			}
+			.seed-row {
+				display: flex;
+				gap: 10px;
+			}
+			.seed-row .form-input {
+				flex: 1;
+			}
+			#randomSeedBtn {
+				padding: 0 20px;
+				background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+				border: 2px solid rgba(255, 255, 255, 0.2);
+				border-radius: 10px;
+				color: white;
+				font-size: 14px;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				white-space: nowrap;
+			}
+			#randomSeedBtn:hover {
+				background: linear-gradient(135deg, rgba(233, 69, 96, 0.3) 0%, rgba(233, 69, 96, 0.1) 100%);
+				border-color: rgba(233, 69, 96, 0.5);
+			}
+			.modal-actions {
+				display: flex;
+				gap: 12px;
+				margin-top: 30px;
+			}
+			.modal-btn {
+				flex: 1;
+				height: 48px;
+				border: none;
+				border-radius: 10px;
+				font-size: 14px;
+				font-weight: bold;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				text-transform: uppercase;
+				letter-spacing: 1px;
+			}
+			.modal-btn.secondary {
+				background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+				border: 2px solid rgba(255, 255, 255, 0.2);
+				color: white;
+			}
+			.modal-btn.secondary:hover {
+				background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+			}
+			.modal-btn.primary {
+				background: linear-gradient(135deg, #e94560 0%, #c73e54 100%);
+				color: white;
+			}
+			.modal-btn.primary:hover {
+				background: linear-gradient(135deg, #ff6b6b 0%, #e94560 100%);
+			}
+		</style>
+	</head>
+	<body>
+		<div id="worldSelectScreen">
+			<div id="header">
+				<div id="title">Select World</div>
+				<button id="backButton">Back</button>
+			</div>
+			
+			<div id="worldList">
+				<!-- World items will be populated dynamically -->
+				<div id="emptyState">
+					<div id="emptyStateIcon">🌍</div>
+					<div id="emptyStateText">No worlds found</div>
+					<div id="emptyStateSubtext">Create a new world to begin your adventure</div>
+				</div>
+			</div>
+			
+			<div id="bottomBar">
+				<button id="createWorldBtn">Create New World</button>
+				<button id="playBtn" disabled>Play Selected World</button>
+			</div>
+		</div>
+		
+		<!-- Create World Modal -->
+		<div id="createWorldModal" class="modal-overlay">
+			<div class="modal">
+				<div class="modal-title">Create New World</div>
+				
+				<div class="form-group">
+					<label class="form-label">World Name</label>
+					<input type="text" id="worldNameInput" class="form-input" placeholder="Enter world name..." />
+				</div>
+				
+				<div class="form-group">
+					<label class="form-label">Seed (Optional)</label>
+					<div class="seed-row">
+						<input type="text" id="worldSeedInput" class="form-input" placeholder="Random seed..." />
+						<button id="randomSeedBtn">Random</button>
+					</div>
+				</div>
+				
+				<div class="modal-actions">
+					<button id="cancelCreateBtn" class="modal-btn secondary">Cancel</button>
+					<button id="confirmCreateBtn" class="modal-btn primary">Create World</button>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
