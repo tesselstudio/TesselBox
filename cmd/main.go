@@ -18,6 +18,7 @@ import (
 	"kaijuengine.com/platform/hid"
 
 	"github.com/tesselstudio/TesselBox/pkg/audio"
+	"github.com/tesselstudio/TesselBox/pkg/content"
 	"github.com/tesselstudio/TesselBox/pkg/crafting"
 	"github.com/tesselstudio/TesselBox/pkg/game"
 	"github.com/tesselstudio/TesselBox/pkg/network"
@@ -54,7 +55,8 @@ func (g *TesselBoxGame) ContentDatabase() (assets.Database, error) {
 			return nil, err
 		}
 	}
-	return assets.NewFileDatabase(gameContentPath)
+	// Use GameContentDatabase which handles path transformations for shaders, materials, etc.
+	return content.NewGameContentDatabase(gameContentPath)
 }
 
 // copyEditorContent copies content from Kaiju Engine's embedded content
@@ -176,12 +178,25 @@ var uiManager ui.Manager
 
 // Launch initializes the game
 func (g *TesselBoxGame) Launch(host *engine.Host) {
+	println("DEBUG: Launch starting...")
 	g.host = host
 
 	// Initialize UI Manager
+	println("DEBUG: Initializing UI Manager...")
 	uiManager.Init(host)
+	println("DEBUG: UI Manager initialized")
+
+	// Show the window - critical for window to appear
+	println("DEBUG: About to show window...")
+	if host.Window != nil {
+		host.Window.Show()
+		println("DEBUG: Window shown")
+	} else {
+		println("DEBUG: Window is nil!")
+	}
 
 	// Initialize audio system
+	println("DEBUG: Initializing audio...")
 	audioManager := audio.GetManager()
 	if err := audioManager.Initialize(); err != nil {
 		// Audio is optional, log but continue
@@ -189,16 +204,22 @@ func (g *TesselBoxGame) Launch(host *engine.Host) {
 	}
 
 	// Create game controller
+	println("DEBUG: Creating controller...")
 	g.controller = game.NewController(host)
+	println("DEBUG: Controller created")
 
 	// Register state change callback
 	g.registerStateCallbacks()
 
 	// Show login screen
+	println("DEBUG: Showing login screen...")
 	g.showLoginScreen()
+	println("DEBUG: Login screen shown")
 
 	// Register update function for game loop
+	println("DEBUG: Registering update...")
 	g.updateId = host.Updater.AddUpdate(g.update)
+	println("DEBUG: Launch complete")
 }
 
 // playUIClick plays the UI click sound
@@ -222,9 +243,17 @@ func (g *TesselBoxGame) showLoginScreen() {
 	doc := markup.DocumentFromHTMLString(&uiManager, string(loginHTML), "", nil, nil, nil)
 	g.currentDoc = doc
 
-	// Activate all UI elements
+	// Activate top-level elements first, then all elements
+	// This ensures proper hierarchy activation for rendering
+	for i := range doc.TopElements {
+		if doc.TopElements[i].UI != nil && doc.TopElements[i].UI.Entity() != nil {
+			doc.TopElements[i].UI.Entity().Activate()
+		}
+	}
 	for i := range doc.Elements {
-		doc.Elements[i].UI.Entity().Activate()
+		if doc.Elements[i].UI != nil && doc.Elements[i].UI.Entity() != nil {
+			doc.Elements[i].UI.Entity().Activate()
+		}
 	}
 
 	// Setup login handlers
@@ -243,10 +272,14 @@ func (g *TesselBoxGame) showLoginScreen() {
 		userInput.Focus()
 	}
 
-	// Add ESC handler for quit
-	g.host.Window.Keyboard.AddKeyCallback(func(keyId int, keyState hid.KeyState) {
-		if keyId == hid.KeyboardKeyEscape && keyState == hid.KeyStateDown {
-			g.host.Close()
+	// Add ESC handler for quit - defer to ensure window is ready
+	g.host.RunAfterFrames(1, func() {
+		if g.host != nil && g.host.Window != nil {
+			g.host.Window.Keyboard.AddKeyCallback(func(keyId int, keyState hid.KeyState) {
+				if keyId == hid.KeyboardKeyEscape && keyState == hid.KeyStateDown {
+					g.host.Close()
+				}
+			})
 		}
 	})
 }
@@ -275,8 +308,16 @@ func (g *TesselBoxGame) showMainMenu() {
 	doc := markup.DocumentFromHTMLString(&uiManager, string(menuHTML), "", nil, nil, nil)
 	g.currentDoc = doc
 
+	// Activate top-level elements first, then all elements
+	for i := range doc.TopElements {
+		if doc.TopElements[i].UI != nil && doc.TopElements[i].UI.Entity() != nil {
+			doc.TopElements[i].UI.Entity().Activate()
+		}
+	}
 	for i := range doc.Elements {
-		doc.Elements[i].UI.Entity().Activate()
+		if doc.Elements[i].UI != nil && doc.Elements[i].UI.Entity() != nil {
+			doc.Elements[i].UI.Entity().Activate()
+		}
 	}
 
 	// Single Player button
@@ -367,8 +408,16 @@ func (g *TesselBoxGame) showWorldSelect() {
 	doc := markup.DocumentFromHTMLString(&uiManager, string(worldHTML), "", nil, nil, nil)
 	g.currentDoc = doc
 
+	// Activate top-level elements first, then all elements
+	for i := range doc.TopElements {
+		if doc.TopElements[i].UI != nil && doc.TopElements[i].UI.Entity() != nil {
+			doc.TopElements[i].UI.Entity().Activate()
+		}
+	}
 	for i := range doc.Elements {
-		doc.Elements[i].UI.Entity().Activate()
+		if doc.Elements[i].UI != nil && doc.Elements[i].UI.Entity() != nil {
+			doc.Elements[i].UI.Entity().Activate()
+		}
 	}
 
 	// Load saved worlds
@@ -588,8 +637,16 @@ func (g *TesselBoxGame) showMultiplayerMenu() {
 	}
 
 	doc := markup.DocumentFromHTMLString(&uiManager, string(mpHTML), "", nil, nil, nil)
+	// Activate top-level elements first, then all elements
+	for i := range doc.TopElements {
+		if doc.TopElements[i].UI != nil && doc.TopElements[i].UI.Entity() != nil {
+			doc.TopElements[i].UI.Entity().Activate()
+		}
+	}
 	for i := range doc.Elements {
-		doc.Elements[i].UI.Entity().Activate()
+		if doc.Elements[i].UI != nil && doc.Elements[i].UI.Entity() != nil {
+			doc.Elements[i].UI.Entity().Activate()
+		}
 	}
 
 	// Setup back button
@@ -849,8 +906,16 @@ func (g *TesselBoxGame) showGame() {
 	if err == nil {
 		doc := markup.DocumentFromHTMLString(&uiManager, string(hudHTML), "", nil, nil, nil)
 		g.currentDoc = doc
+		// Activate top-level elements first, then all elements
+		for i := range doc.TopElements {
+			if doc.TopElements[i].UI != nil && doc.TopElements[i].UI.Entity() != nil {
+				doc.TopElements[i].UI.Entity().Activate()
+			}
+		}
 		for i := range doc.Elements {
-			doc.Elements[i].UI.Entity().Activate()
+			if doc.Elements[i].UI != nil && doc.Elements[i].UI.Entity() != nil {
+				doc.Elements[i].UI.Entity().Activate()
+			}
 		}
 	}
 
@@ -870,8 +935,16 @@ func (g *TesselBoxGame) showPauseMenu() {
 	}
 
 	doc := markup.DocumentFromHTMLString(&uiManager, string(pauseHTML), "", nil, nil, nil)
+	// Activate top-level elements first, then all elements
+	for i := range doc.TopElements {
+		if doc.TopElements[i].UI != nil && doc.TopElements[i].UI.Entity() != nil {
+			doc.TopElements[i].UI.Entity().Activate()
+		}
+	}
 	for i := range doc.Elements {
-		doc.Elements[i].UI.Entity().Activate()
+		if doc.Elements[i].UI != nil && doc.Elements[i].UI.Entity() != nil {
+			doc.Elements[i].UI.Entity().Activate()
+		}
 	}
 
 	// Resume button
@@ -969,8 +1042,16 @@ func (g *TesselBoxGame) showInventory() {
 	}
 
 	doc := markup.DocumentFromHTMLString(&uiManager, string(invHTML), "", nil, nil, nil)
+	// Activate top-level elements first, then all elements
+	for i := range doc.TopElements {
+		if doc.TopElements[i].UI != nil && doc.TopElements[i].UI.Entity() != nil {
+			doc.TopElements[i].UI.Entity().Activate()
+		}
+	}
 	for i := range doc.Elements {
-		doc.Elements[i].UI.Entity().Activate()
+		if doc.Elements[i].UI != nil && doc.Elements[i].UI.Entity() != nil {
+			doc.Elements[i].UI.Entity().Activate()
+		}
 	}
 
 	// Setup crafting button if it exists
@@ -994,8 +1075,16 @@ func (g *TesselBoxGame) showCrafting() {
 	}
 
 	doc := markup.DocumentFromHTMLString(&uiManager, string(craftHTML), "", nil, nil, nil)
+	// Activate top-level elements first, then all elements
+	for i := range doc.TopElements {
+		if doc.TopElements[i].UI != nil && doc.TopElements[i].UI.Entity() != nil {
+			doc.TopElements[i].UI.Entity().Activate()
+		}
+	}
 	for i := range doc.Elements {
-		doc.Elements[i].UI.Entity().Activate()
+		if doc.Elements[i].UI != nil && doc.Elements[i].UI.Entity() != nil {
+			doc.Elements[i].UI.Entity().Activate()
+		}
 	}
 
 	// Setup close button
