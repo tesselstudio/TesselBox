@@ -58,6 +58,14 @@ func transformPath(key string) string {
 	if strings.Contains(key, "/") || strings.Contains(key, "\\") {
 		return key
 	}
+	// If key already starts with known folder prefix, don't transform
+	if strings.HasPrefix(key, "fonts/") ||
+		strings.HasPrefix(key, "textures/") ||
+		strings.HasPrefix(key, "meshes/") ||
+		strings.HasPrefix(key, "ui/") ||
+		strings.HasPrefix(key, "renderer/") {
+		return key
+	}
 
 	ext := strings.ToLower(filepath.Ext(key))
 	switch ext {
@@ -103,38 +111,47 @@ func (g *GameContentDatabase) CacheClear() {
 
 func (g *GameContentDatabase) Read(key string) ([]byte, error) {
 	defer tracing.NewRegion("GameContentDatabase.Read: " + key).End()
-	// For PNGs, try fonts first (for font textures), then textures
+	// For PNGs without path prefix, try fonts first (for font textures), then textures
 	if ext := strings.ToLower(filepath.Ext(key)); ext == ".png" || ext == ".jpg" || ext == ".jpeg" {
-		// Try fonts folder first
-		if data, err := g.inner.Read(filepath.Join("fonts", key)); err == nil {
-			return data, nil
+		// Only transform if it's just a filename without folder prefix
+		if !strings.Contains(key, "/") && !strings.Contains(key, "\\") {
+			// Try fonts folder first
+			if data, err := g.inner.Read(filepath.Join("fonts", key)); err == nil {
+				return data, nil
+			}
+			// Fall back to textures folder
+			return g.inner.Read(filepath.Join("textures", key))
 		}
-		// Fall back to textures folder
-		return g.inner.Read(filepath.Join("textures", key))
 	}
 	return g.inner.Read(transformPath(key))
 }
 
 func (g *GameContentDatabase) ReadText(key string) (string, error) {
 	defer tracing.NewRegion("GameContentDatabase.ReadText: " + key).End()
-	// For PNGs, try fonts first (for font textures), then textures
+	// For PNGs without path prefix, try fonts first (for font textures), then textures
 	if ext := strings.ToLower(filepath.Ext(key)); ext == ".png" || ext == ".jpg" || ext == ".jpeg" {
-		if data, err := g.inner.ReadText(filepath.Join("fonts", key)); err == nil {
-			return data, nil
+		// Only transform if it's just a filename without folder prefix
+		if !strings.Contains(key, "/") && !strings.Contains(key, "\\") {
+			if data, err := g.inner.ReadText(filepath.Join("fonts", key)); err == nil {
+				return data, nil
+			}
+			return g.inner.ReadText(filepath.Join("textures", key))
 		}
-		return g.inner.ReadText(filepath.Join("textures", key))
 	}
 	return g.inner.ReadText(transformPath(key))
 }
 
 func (g *GameContentDatabase) Exists(key string) bool {
 	defer tracing.NewRegion("GameContentDatabase.Exists: " + key).End()
-	// For PNGs, check fonts first, then textures
+	// For PNGs without path prefix, check fonts first, then textures
 	if ext := strings.ToLower(filepath.Ext(key)); ext == ".png" || ext == ".jpg" || ext == ".jpeg" {
-		if g.inner.Exists(filepath.Join("fonts", key)) {
-			return true
+		// Only transform if it's just a filename without folder prefix
+		if !strings.Contains(key, "/") && !strings.Contains(key, "\\") {
+			if g.inner.Exists(filepath.Join("fonts", key)) {
+				return true
+			}
+			return g.inner.Exists(filepath.Join("textures", key))
 		}
-		return g.inner.Exists(filepath.Join("textures", key))
 	}
 	return g.inner.Exists(transformPath(key))
 }
