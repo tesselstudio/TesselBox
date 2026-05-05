@@ -73,7 +73,7 @@ func testWorldGeneration() {
 	// Test distance calculation
 	other := world.HexCoord{Q: 8, R: 6}
 	distance := coord.Distance(other)
-	fmt.Printf("  ✓ Distance: %.2f\n", distance)
+	fmt.Printf("  ✓ Distance: %d\n", distance)
 }
 
 func testCraftingSystem() {
