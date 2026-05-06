@@ -66,13 +66,13 @@ func TestGetAllBlocks(t *testing.T) {
 		t.Error("GetAllBlocks() returned empty slice")
 	}
 
-	// Verify no duplicates
-	seen := make(map[BlockType]bool)
+	// Verify no duplicate IDs
+	seenIDs := make(map[string]bool)
 	for _, block := range blocks {
-		if seen[block.Type] {
-			t.Errorf("Duplicate block type: %d", block.Type)
+		if seenIDs[block.ID] {
+			t.Errorf("Duplicate block ID: %s", block.ID)
 		}
-		seen[block.Type] = true
+		seenIDs[block.ID] = true
 	}
 }
 
