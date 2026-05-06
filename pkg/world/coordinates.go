@@ -1,7 +1,30 @@
+// Package world provides hexagonal coordinate system and world management
+// for the TesselBox voxel game.
+//
+// The coordinate system uses axial coordinates (Q, R) for hexagonal grids,
+// providing efficient neighbor calculations and distance measurements.
+//
+// # Coordinate System
+//
+// HexCoord represents a position in hexagonal axial coordinates:
+//   - Q: Column coordinate (x-axis)
+//   - R: Row coordinate (diagonal axis)
+//
+// Usage
+//
+//	coord := world.HexCoord{Q: 5, R: 3}
+//	worldPos := coord.ToWorld(1.0) // Convert to world space
+//	distance := coord.Distance(other) // Calculate hex distance
+//	neighbor := coord.Neighbor(world.HexDirectionEast) // Get neighbor
+//
+// # Thread Safety
+//
+// All coordinate operations are thread-safe as they work with immutable values.
 package world
 
 import (
 	"math"
+	"strconv"
 
 	"kaijuengine.com/matrix"
 )
@@ -137,7 +160,7 @@ func (h HexCoord) Scale(scalar int) HexCoord {
 
 // String returns a string representation of this coordinate
 func (h HexCoord) String() string {
-	return "(" + string(rune(h.Q)) + "," + string(rune(h.R)) + ")"
+	return "(" + strconv.Itoa(h.Q) + "," + strconv.Itoa(h.R) + ")"
 }
 
 // HexDirection represents the 6 directions in a hexagonal grid

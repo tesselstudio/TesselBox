@@ -1,6 +1,7 @@
 package crafting
 
 import (
+	"strconv"
 	"sync"
 )
 
@@ -167,7 +168,7 @@ func (rr *RecipeRegistry) generatePattern(recipe *Recipe) string {
 	// In a full implementation, this would handle the actual recipe pattern
 	pattern := recipe.ID
 	for _, ingredient := range recipe.Ingredients {
-		pattern += ":" + ingredient.ItemID + ":" + string(rune(ingredient.Quantity))
+		pattern += ":" + ingredient.ItemID + ":" + strconv.Itoa(ingredient.Quantity)
 	}
 	return pattern
 }

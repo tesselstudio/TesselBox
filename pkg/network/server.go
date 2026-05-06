@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -226,7 +228,51 @@ func (s *Server) handleConnection(conn net.Conn) {
 	// Assign player ID
 	client.ID = s.nextPlayerID
 	s.nextPlayerID++
-	client.Name = handshake.PlayerName
+	// Validate player name
+	name := strings.TrimSpace(handshake.PlayerName)
+	if len(name) == 0 || len(name) > 32 {
+		// Send invalid name response
+		response := &HandshakeResponseMessage{
+			Success:  false,
+			PlayerID: 0,
+			Message:  "Player name must be 1-32 characters",
+		}
+
+		respMsg := &Message{
+			Type:      MessageTypeHandshakeResponse,
+			Data:      s.protocol.EncodeHandshakeResponse(response),
+			Timestamp: uint64(time.Now().UnixNano()),
+			PlayerID:  0,
+		}
+
+		client.Writer.WriteMessage(respMsg)
+		conn.Close()
+		return
+	}
+
+	// Sanitize name (allow only alphanumeric, spaces, underscores)
+	validName := regexp.MustCompile(`^[a-zA-Z0-9_ ]+$`).MatchString(name)
+	if !validName {
+		// Send invalid characters response
+		response := &HandshakeResponseMessage{
+			Success:  false,
+			PlayerID: 0,
+			Message:  "Player name contains invalid characters",
+		}
+
+		respMsg := &Message{
+			Type:      MessageTypeHandshakeResponse,
+			Data:      s.protocol.EncodeHandshakeResponse(response),
+			Timestamp: uint64(time.Now().UnixNano()),
+			PlayerID:  0,
+		}
+
+		client.Writer.WriteMessage(respMsg)
+		conn.Close()
+		return
+	}
+
+	client.Name = name
 
 	// Create player object
 	client.Player = &Player{

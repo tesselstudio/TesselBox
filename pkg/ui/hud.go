@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"strconv"
 	"sync"
 
 	"kaijuengine.com/matrix"
@@ -203,7 +204,7 @@ func NewHotbar(id string, position matrix.Vec2, slotCount int) *Hotbar {
 
 	// Create hotbar slots
 	for i := 0; i < slotCount; i++ {
-		slot := NewHotbarSlot("hotbar_slot_"+string(rune(i)), matrix.NewVec2(float32(i*40+5), 5))
+		slot := NewHotbarSlot("hotbar_slot_"+strconv.Itoa(i), matrix.NewVec2(float32(i*40+5), 5))
 		hotbar.slots[i] = slot
 		hotbar.Panel.AddChild(slot.Panel.UIComponent)
 	}
@@ -319,7 +320,7 @@ func (hs *HotbarSlot) SetItem(item *crafting.ItemStack) {
 		hs.icon.SetVisible(true)
 
 		if item.Quantity > 1 {
-			hs.countLabel.SetText(string(rune(item.Quantity)))
+			hs.countLabel.SetText(strconv.Itoa(int(item.Quantity)))
 			hs.countLabel.SetVisible(true)
 		} else {
 			hs.countLabel.SetVisible(false)
@@ -405,7 +406,7 @@ func NewDebugInfo(id string, position matrix.Vec2) *DebugInfo {
 	}
 
 	for i, text := range debugLabels {
-		label := NewLabel(id+"_label_"+string(rune(i)), text, matrix.NewVec2(10, float32(i*20+10)), matrix.NewVec2(260, 16))
+		label := NewLabel(id+"_label_"+strconv.Itoa(i), text, matrix.NewVec2(10, float32(i*20+10)), matrix.NewVec2(260, 16))
 		label.Style.ForegroundColor = matrix.ColorWhite()
 		label.Style.FontSize = 14
 		debug.labels = append(debug.labels, label)
@@ -422,7 +423,7 @@ func (di *DebugInfo) SetFPS(fps float32) {
 
 	di.fps = fps
 	if len(di.labels) > 0 {
-		di.labels[0].SetText("FPS: " + string(rune(fps)))
+		di.labels[0].SetText("FPS: " + strconv.Itoa(int(fps)))
 	}
 }
 
@@ -433,7 +434,7 @@ func (di *DebugInfo) SetPosition(pos matrix.Vec3) {
 
 	di.position = pos
 	if len(di.labels) > 1 {
-		di.labels[1].SetText("Position: (" + string(rune(pos.X())) + ", " + string(rune(pos.Y())) + ", " + string(rune(pos.Z())) + ")")
+		di.labels[1].SetText("Position: (" + strconv.Itoa(int(pos.X())) + ", " + strconv.Itoa(int(pos.Y())) + ", " + strconv.Itoa(int(pos.Z())) + ")")
 	}
 }
 
@@ -446,7 +447,7 @@ func (di *DebugInfo) SetTimeOfDay(timeOfDay float32) {
 	if len(di.labels) > 2 {
 		hours := int(timeOfDay)
 		minutes := int((timeOfDay - float32(hours)) * 60)
-		di.labels[2].SetText("Time: " + string(rune(hours)) + ":" + string(rune(minutes)))
+		di.labels[2].SetText("Time: " + strconv.Itoa(hours) + ":" + strconv.Itoa(minutes))
 	}
 }
 
@@ -457,7 +458,7 @@ func (di *DebugInfo) SetTemperature(temp float32) {
 
 	di.temperature = temp
 	if len(di.labels) > 3 {
-		di.labels[3].SetText("Temperature: " + string(rune(temp)) + "°C")
+		di.labels[3].SetText("Temperature: " + strconv.Itoa(int(temp)) + "°C")
 	}
 }
 

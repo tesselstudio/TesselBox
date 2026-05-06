@@ -27,7 +27,13 @@ type SaveManager struct {
 
 // NewSaveManager creates a new save manager
 func NewSaveManager(worldName string) (*SaveManager, error) {
-	basePath := filepath.Join("saves", worldName)
+	// Sanitize world name
+	sanitizedName := filepath.Base(filepath.Clean(worldName))
+	if sanitizedName != worldName || sanitizedName == "." || sanitizedName == ".." {
+		return nil, fmt.Errorf("invalid world name: %s", worldName)
+	}
+
+	basePath := filepath.Join("saves", sanitizedName)
 
 	// Create save directory
 	if err := os.MkdirAll(filepath.Join(basePath, "region"), 0755); err != nil {
@@ -393,13 +399,25 @@ func ListWorlds() ([]string, error) {
 
 // WorldExists checks if a world exists
 func WorldExists(name string) bool {
-	path := filepath.Join("saves", name)
+	// Sanitize world name
+	sanitizedName := filepath.Base(filepath.Clean(name))
+	if sanitizedName != name || sanitizedName == "." || sanitizedName == ".." {
+		return false
+	}
+
+	path := filepath.Join("saves", sanitizedName)
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
 }
 
 // DeleteWorld deletes a world
 func DeleteWorld(name string) error {
-	path := filepath.Join("saves", name)
+	// Sanitize world name
+	sanitizedName := filepath.Base(filepath.Clean(name))
+	if sanitizedName != name || sanitizedName == "." || sanitizedName == ".." {
+		return fmt.Errorf("invalid world name: %s", name)
+	}
+
+	path := filepath.Join("saves", sanitizedName)
 	return os.RemoveAll(path)
 }

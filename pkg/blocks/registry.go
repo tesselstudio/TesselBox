@@ -1,7 +1,40 @@
+// Package blocks provides block type definitions, registry management,
+// and geometry generation for hexagonal prism blocks.
+//
+// The block system is responsible for:
+//   - Defining block types and their properties (solid, transparent, etc.)
+//   - Managing the global block registry
+//   - Generating mesh geometry for rendering
+//   - Handling block placement and removal
+//
+// # Block Types
+//
+// The following block types are defined:
+//   - BlockTypeFull: Full hexagonal prism block
+//   - BlockTypeHalfVertical: Vertical half-height block
+//   - BlockTypeHalfHorizontal: Horizontal half-height block
+//   - BlockTypeCorner: Corner wedge block
+//   - BlockTypeStairs: Stair block
+//   - BlockTypeSlab: Slab block
+//
+// Usage
+//
+//	registry := blocks.NewBlockRegistry()
+//	block, exists := registry.GetBlock("stone")
+//	if exists {
+//	    fmt.Println(block.Name) // "Stone"
+//	}
+//
+// # Thread Safety
+//
+// The block registry is thread-safe for concurrent reads after initialization.
+// All modifications should be done during initialization before the game starts.
 package blocks
 
 import (
+	"strconv"
 	"sync"
+
 	"kaijuengine.com/matrix"
 )
 
@@ -32,10 +65,10 @@ type BlockProperties struct {
 
 // BlockRegistry manages all registered block types
 type BlockRegistry struct {
-	mu       sync.RWMutex
-	blocks   map[string]*BlockProperties
-	byID     map[BlockType]*BlockProperties
-	nextID   int
+	mu     sync.RWMutex
+	blocks map[string]*BlockProperties
+	byID   map[BlockType]*BlockProperties
+	nextID int
 }
 
 // NewBlockRegistry creates a new block registry
@@ -45,10 +78,10 @@ func NewBlockRegistry() *BlockRegistry {
 		byID:   make(map[BlockType]*BlockProperties),
 		nextID: 0,
 	}
-	
+
 	// Register default block types
 	registry.registerDefaults()
-	
+
 	return registry
 }
 
@@ -56,19 +89,19 @@ func NewBlockRegistry() *BlockRegistry {
 func (r *BlockRegistry) RegisterBlock(props *BlockProperties) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if _, exists := r.blocks[props.ID]; exists {
 		return ErrBlockAlreadyExists
 	}
-	
+
 	// Assign unique ID if not set
 	if props.ID == "" {
 		props.ID = r.generateID()
 	}
-	
+
 	r.blocks[props.ID] = props
 	r.byID[props.Type] = props
-	
+
 	return nil
 }
 
@@ -76,7 +109,7 @@ func (r *BlockRegistry) RegisterBlock(props *BlockProperties) error {
 func (r *BlockRegistry) GetBlock(id string) (*BlockProperties, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	block, exists := r.blocks[id]
 	return block, exists
 }
@@ -85,7 +118,7 @@ func (r *BlockRegistry) GetBlock(id string) (*BlockProperties, bool) {
 func (r *BlockRegistry) GetBlockByType(blockType BlockType) (*BlockProperties, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	block, exists := r.byID[blockType]
 	return block, exists
 }
@@ -94,12 +127,12 @@ func (r *BlockRegistry) GetBlockByType(blockType BlockType) (*BlockProperties, b
 func (r *BlockRegistry) GetAllBlocks() []*BlockProperties {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	blocks := make([]*BlockProperties, 0, len(r.blocks))
 	for _, block := range r.blocks {
 		blocks = append(blocks, block)
 	}
-	
+
 	return blocks
 }
 
@@ -107,14 +140,14 @@ func (r *BlockRegistry) GetAllBlocks() []*BlockProperties {
 func (r *BlockRegistry) GetSolidBlocks() []*BlockProperties {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	blocks := make([]*BlockProperties, 0)
 	for _, block := range r.blocks {
 		if block.Solid {
 			blocks = append(blocks, block)
 		}
 	}
-	
+
 	return blocks
 }
 
@@ -122,14 +155,14 @@ func (r *BlockRegistry) GetSolidBlocks() []*BlockProperties {
 func (r *BlockRegistry) GetTransparentBlocks() []*BlockProperties {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	blocks := make([]*BlockProperties, 0)
 	for _, block := range r.blocks {
 		if block.Transparent {
 			blocks = append(blocks, block)
 		}
 	}
-	
+
 	return blocks
 }
 
@@ -156,7 +189,7 @@ func (r *BlockRegistry) registerDefaults() {
 			LightLevel:  0,
 			TintColor:   matrix.NewColor(139, 90, 43, 255),
 			Mass:        2.5,
-			Resistance: 2.5,
+			Resistance:  2.5,
 		},
 		{
 			ID:          "grass",
@@ -258,7 +291,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Resistance:  2.0,
 		},
 	}
-	
+
 	for _, block := range defaultBlocks {
 		r.blocks[block.ID] = block
 		r.byID[block.Type] = block
@@ -269,7 +302,7 @@ func (r *BlockRegistry) registerDefaults() {
 func (r *BlockRegistry) generateID() string {
 	id := r.nextID
 	r.nextID++
-	return "block_" + string(rune(id))
+	return "block_" + strconv.Itoa(id)
 }
 
 // Global block registry instance
@@ -283,8 +316,8 @@ func GetGlobalRegistry() *BlockRegistry {
 // Errors
 var (
 	ErrBlockAlreadyExists = &BlockError{Message: "block already exists"}
-	ErrBlockNotFound     = &BlockError{Message: "block not found"}
-	ErrInvalidBlockType  = &BlockError{Message: "invalid block type"}
+	ErrBlockNotFound      = &BlockError{Message: "block not found"}
+	ErrInvalidBlockType   = &BlockError{Message: "invalid block type"}
 )
 
 // BlockError represents a block-related error

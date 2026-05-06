@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"strconv"
 	"sync"
 	"time"
 
@@ -99,7 +100,7 @@ func (mm *MenuManager) createMenus(screenWidth, screenHeight float32) {
 	}
 
 	for i, btn := range buttons {
-		button := NewButton("main_btn_"+string(rune(i)), btn.label, matrix.NewVec2(100, float32(100+i*60)), matrix.NewVec2(200, 50))
+		button := NewButton("main_btn_"+strconv.Itoa(i), btn.label, matrix.NewVec2(100, float32(100+i*60)), matrix.NewVec2(200, 50))
 		button.Style.BackgroundColor = matrix.NewColor(100/255.0, 100/255.0, 100/255.0, 255/255.0)
 		button.Style.ForegroundColor = matrix.ColorWhite()
 		button.Style.CornerRadius = 5
@@ -137,7 +138,7 @@ func (mm *MenuManager) createMenus(screenWidth, screenHeight float32) {
 	}
 
 	for i, btn := range pauseButtons {
-		button := NewButton("pause_btn_"+string(rune(i)), btn.label, matrix.NewVec2(50, float32(100+i*60)), matrix.NewVec2(200, 50))
+		button := NewButton("pause_btn_"+strconv.Itoa(i), btn.label, matrix.NewVec2(50, float32(100+i*60)), matrix.NewVec2(200, 50))
 		button.Style.BackgroundColor = matrix.NewColor(100/255.0, 100/255.0, 100/255.0, 255/255.0)
 		button.Style.ForegroundColor = matrix.ColorWhite()
 		button.Style.CornerRadius = 5
@@ -613,7 +614,7 @@ func (mm *MenuManager) createWorldListItem(parent *Panel, world worldInfo, index
 	itemPanel.AddChild(nameLabel.UIComponent)
 
 	// World info
-	infoText := "Last played: " + world.lastPlayed + " | Seed: " + string(rune(world.seed))
+	infoText := "Last played: " + world.lastPlayed + " | Seed: " + strconv.Itoa(int(world.seed))
 	infoLabel := NewLabel("world_info_"+world.name, infoText, matrix.NewVec2(15, 32), matrix.NewVec2(350, 18))
 	infoLabel.Style.ForegroundColor = matrix.NewColor(150/255.0, 150/255.0, 150/255.0, 1.0)
 	infoLabel.Style.FontSize = 12
