@@ -1,5 +1,7 @@
 github.com/KaijuEngine/uuid v1.0.0 h1:stU4x/RCdAg9lPEok4tSceSCIVnqMzCmZqNlJoDEILY=
 github.com/KaijuEngine/uuid v1.0.0/go.mod h1:fcM8WxoZFTJ8veHGJj9ZakpnENMy/LDN3oJ/zDo9xRo=
+github.com/golang-jwt/jwt/v5 v5.3.1 h1:kYf81DTWFe7t+1VvL7eS+jKFVWaUnK9cB1qbwn63YCY=
+github.com/golang-jwt/jwt/v5 v5.3.1/go.mod h1:fxCRLWMO43lRc8nhHWY6LGqRcf+1gQWArsqaEUEa5bE=
 github.com/tdewolff/parse/v2 v2.8.1 h1:J5GSHru6o3jF1uLlEKVXkDxxcVx6yzOlIVIotK4w2po=
 github.com/tdewolff/parse/v2 v2.8.1/go.mod h1:Hwlni2tiVNKyzR1o6nUs4FOF07URA+JLBLd6dlIXYqo=
 github.com/tdewolff/test v1.0.11 h1:FdLbwQVHxqG16SlkGveC0JVyrJN62COWTRyUFzfbtBE=

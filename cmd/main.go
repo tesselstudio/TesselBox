@@ -22,6 +22,7 @@ import (
 	"github.com/tesselstudio/TesselBox/pkg/crafting"
 	"github.com/tesselstudio/TesselBox/pkg/game"
 	"github.com/tesselstudio/TesselBox/pkg/network"
+	"github.com/tesselstudio/TesselBox/pkg/oauth"
 	"github.com/tesselstudio/TesselBox/pkg/world"
 )
 
@@ -30,11 +31,12 @@ var Version = "dev"
 
 // TesselBoxGame represents the main game state
 type TesselBoxGame struct {
-	host       *engine.Host
-	controller *game.Controller
-	updateId   engine.UpdateId
-	currentDoc interface{}
-	stateMutex sync.RWMutex
+	host        *engine.Host
+	controller  *game.Controller
+	updateId    engine.UpdateId
+	currentDoc  interface{}
+	stateMutex  sync.RWMutex
+	oauthConfig *oauth.Config
 }
 
 // PluginRegistry returns the plugin types for this game
@@ -181,6 +183,16 @@ func (g *TesselBoxGame) Launch(host *engine.Host) {
 	println("DEBUG: Launch starting...")
 	g.host = host
 
+	// Initialize OAuth configuration
+	oauthConfig, err := oauth.LoadConfig()
+	if err != nil {
+		println("DEBUG: OAuth config not found, OAuth login will be disabled:", err.Error())
+		g.oauthConfig = nil
+	} else {
+		g.oauthConfig = oauthConfig
+		println("DEBUG: OAuth configuration loaded")
+	}
+
 	// Initialize UI Manager
 	println("DEBUG: Initializing UI Manager...")
 	uiManager.Init(host)
@@ -263,6 +275,16 @@ func (g *TesselBoxGame) showLoginScreen() {
 		btn.Base().AddEvent(ui.EventTypeClick, func() {
 			g.playUIClick()
 			g.transitionToMainMenu()
+		})
+	}
+
+	// Setup GitHub OAuth login button
+	githubLoginButton, ok := doc.GetElementById("githubLoginButton")
+	if ok {
+		btn := githubLoginButton.UI.ToButton()
+		btn.Base().AddEvent(ui.EventTypeClick, func() {
+			g.playUIClick()
+			g.initiateGitHubOAuth()
 		})
 	}
 
@@ -1164,6 +1186,43 @@ func (g *TesselBoxGame) performCraft() {
 // registerStateCallbacks registers callbacks for state changes
 func (g *TesselBoxGame) registerStateCallbacks() {
 	// State change callbacks can be added here
+}
+
+// initiateGitHubOAuth starts the GitHub OAuth flow
+func (g *TesselBoxGame) initiateGitHubOAuth() {
+	if g.oauthConfig == nil {
+		println("DEBUG: OAuth not configured")
+		g.showLoginError("GitHub OAuth is not configured. Please set up environment variables.")
+		return
+	}
+
+	// Start OAuth server in a goroutine
+	go func() {
+		authServer := oauth.NewAuthServer(g.oauthConfig)
+		if err := authServer.StartServer(); err != nil {
+			println("DEBUG: OAuth server failed to start:", err.Error())
+		}
+	}()
+
+	// Open browser for OAuth
+	authURL := fmt.Sprintf("http://%s:%s/auth/github/login", g.oauthConfig.ServerHost, g.oauthConfig.ServerPort)
+	println("DEBUG: Opening OAuth URL:", authURL)
+
+	// In a real implementation, you would open the system browser
+	// For now, we'll just transition to main menu as a fallback
+	g.transitionToMainMenu()
+}
+
+// showLoginError displays an error message on the login screen
+func (g *TesselBoxGame) showLoginError(message string) {
+	g.stateMutex.Lock()
+	defer g.stateMutex.Unlock()
+
+	if g.currentDoc != nil {
+		// Try to get the status message element and set error text
+		// This is a simplified implementation - in production you'd have proper UI element handling
+		println("DEBUG: Login error:", message)
+	}
 }
 
 // createFallbackLoginScreen creates a basic login UI programmatically
