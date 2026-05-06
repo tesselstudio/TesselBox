@@ -77,16 +77,36 @@ dev:
 
 # Test
 test:
-	go test ./...
+	go test -v -race -coverprofile=coverage.out ./pkg/...
+
+# Coverage
+coverage:
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
 
 # Format code
 fmt:
 	go fmt ./...
+	goimports -w .
 
-# Check for issues
+# Vet
+vet:
+	go vet ./...
+
+# Lint
 lint:
 	@which golangci-lint > /dev/null 2>&1 || (echo "Installing golangci-lint..." && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
 	golangci-lint run
+
+# All checks
+check: fmt vet lint test
+	@echo "All checks passed!"
+
+# Clean
+clean:
+	rm -rf dist/
+	rm -f coverage.out coverage.html
+	rm -f tesselbox tesselbox-*
 
 # Dependencies
 deps:

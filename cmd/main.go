@@ -186,15 +186,6 @@ func (g *TesselBoxGame) Launch(host *engine.Host) {
 	uiManager.Init(host)
 	println("DEBUG: UI Manager initialized")
 
-	// Show the window - critical for window to appear
-	println("DEBUG: About to show window...")
-	if host.Window != nil {
-		host.Window.Show()
-		println("DEBUG: Window shown")
-	} else {
-		println("DEBUG: Window is nil!")
-	}
-
 	// Initialize audio system
 	println("DEBUG: Initializing audio...")
 	audioManager := audio.GetManager()
@@ -211,10 +202,19 @@ func (g *TesselBoxGame) Launch(host *engine.Host) {
 	// Register state change callback
 	g.registerStateCallbacks()
 
-	// Show login screen
+	// Show login screen (create UI before showing window)
 	println("DEBUG: Showing login screen...")
 	g.showLoginScreen()
 	println("DEBUG: Login screen shown")
+
+	// Show the window after UI is ready - critical for window to appear with content
+	println("DEBUG: About to show window...")
+	if host.Window != nil {
+		host.Window.Show()
+		println("DEBUG: Window shown")
+	} else {
+		println("DEBUG: Window is nil!")
+	}
 
 	// Register update function for game loop
 	println("DEBUG: Registering update...")

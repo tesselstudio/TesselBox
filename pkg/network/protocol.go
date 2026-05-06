@@ -397,8 +397,8 @@ func (mr *MessageReader) ReadMessage() (*Message, error) {
 	}
 	
 	length := binary.BigEndian.Uint32(lengthBytes)
-	if length > 65536 { // Max message size
-		return nil, fmt.Errorf("message too large: %d bytes", length)
+	if length > 4096 { // Max message size (4KB)
+		return nil, fmt.Errorf("message too large: %d bytes (max %d)", length, 4096)
 	}
 	
 	// Read message data
