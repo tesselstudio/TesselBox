@@ -268,30 +268,83 @@ func (g *TesselBoxGame) showLoginScreen() {
 		}
 	}
 
-	// Setup login handlers
-	loginButton, ok := doc.GetElementById("loginButton")
-	if ok {
-		btn := loginButton.UI.ToButton()
-		btn.Base().AddEvent(ui.EventTypeClick, func() {
-			g.playUIClick()
-			g.transitionToMainMenu()
-		})
+	// Setup login handlers with better error handling
+	if loginButton, ok := doc.GetElementById("loginButton"); ok {
+		if loginButton.UI != nil {
+			btn := loginButton.UI.ToButton()
+			if btn != nil && btn.Base() != nil {
+				btn.Base().Entity().Activate()
+				btn.Base().AddEvent(ui.EventTypeClick, func() {
+					println("DEBUG: Login button clicked!")
+					g.playUIClick()
+					g.transitionToMainMenu()
+				})
+				println("DEBUG: Login button handler set up successfully")
+			} else {
+				println("DEBUG: Failed to convert login button")
+			}
+		} else {
+			println("DEBUG: Login button UI is nil")
+		}
+	} else {
+		println("DEBUG: Login button element not found")
 	}
 
-	// Setup GitHub OAuth login button
-	githubLoginButton, ok := doc.GetElementById("githubLoginButton")
-	if ok {
-		btn := githubLoginButton.UI.ToButton()
-		btn.Base().AddEvent(ui.EventTypeClick, func() {
-			g.playUIClick()
-			g.initiateGitHubOAuth()
-		})
+	// Setup GitHub OAuth login button with better error handling
+	if githubLoginButton, ok := doc.GetElementById("githubLoginButton"); ok {
+		if githubLoginButton.UI != nil {
+			btn := githubLoginButton.UI.ToButton()
+			if btn != nil && btn.Base() != nil {
+				btn.Base().Entity().Activate()
+				btn.Base().AddEvent(ui.EventTypeClick, func() {
+					println("DEBUG: GitHub OAuth button clicked!")
+					g.playUIClick()
+					g.initiateGitHubOAuth()
+				})
+				println("DEBUG: GitHub OAuth button handler set up successfully")
+			} else {
+				println("DEBUG: Failed to convert GitHub OAuth button")
+			}
+		} else {
+			println("DEBUG: GitHub OAuth button UI is nil")
+		}
+	} else {
+		println("DEBUG: GitHub OAuth button element not found")
 	}
 
-	// Focus username input
+	// Focus username input with better error handling
 	if usernameInput, ok := doc.GetElementById("usernameInput"); ok {
-		userInput := usernameInput.UI.ToInput()
-		userInput.Focus()
+		if usernameInput.UI != nil {
+			userInput := usernameInput.UI.ToInput()
+			if userInput != nil {
+				userInput.Base().Entity().Activate()
+				userInput.Focus()
+				println("DEBUG: Username input focused successfully")
+			} else {
+				println("DEBUG: Failed to convert username input")
+			}
+		} else {
+			println("DEBUG: Username input UI is nil")
+		}
+	} else {
+		println("DEBUG: Username input element not found")
+	}
+
+	// Setup password input
+	if passwordInput, ok := doc.GetElementById("passwordInput"); ok {
+		if passwordInput.UI != nil {
+			passInput := passwordInput.UI.ToInput()
+			if passInput != nil {
+				passInput.Base().Entity().Activate()
+				println("DEBUG: Password input activated successfully")
+			} else {
+				println("DEBUG: Failed to convert password input")
+			}
+		} else {
+			println("DEBUG: Password input UI is nil")
+		}
+	} else {
+		println("DEBUG: Password input element not found")
 	}
 
 	// Add ESC handler for quit - defer to ensure window is ready
