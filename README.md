@@ -10,7 +10,6 @@ A voxel-based sandbox game built with Go and the Kaiju Engine. Explore, build, a
 ![GitHub Contributors](https://img.shields.io/github/contributors/tesselstudio/TesselBox.svg?url=https://github.com/tesselstudio/TesselBox)
 ![GitHub Last Commit](https://img.shields.io/github/last-commit/tesselstudio/TesselBox.svg?url=https://github.com/tesselstudio/TesselBox)
 ![Kaiju Engine](https://img.shields.io/badge/Kaiju-Engine-blue.svg?url=https://github.com/tesselstudio/TesselBox)
-![Version](https://img.shields.io/badge/Version-0.1.0-blue.svg?url=https://github.com/tesselstudio/TesselBox)
 ![GitHub Repo Size](https://img.shields.io/github/repo-size/tesselstudio/TesselBox.svg?url=https://github.com/tesselstudio/TesselBox)
 
 
