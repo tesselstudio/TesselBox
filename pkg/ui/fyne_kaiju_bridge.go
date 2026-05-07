@@ -8,27 +8,24 @@ import (
 	"kaijuengine.com/engine"
 )
 
-// FyneKaijuBridge integrates Fyne UI with Kaiju game systems
+// FyneKaijuBridge integrates Fyne UI with game systems
 type FyneKaijuBridge struct {
-	app         fyne.App
-	window      fyne.Window
-	host        *engine.Host
-	menuManager *MenuManager
+	app    fyne.App
+	window fyne.Window
+	host   *engine.Host
 
 	// UI state
 	isFyneActive bool
 	fyneUI       *ModernFyneUI
 }
 
-// NewFyneKaijuBridge creates a new bridge between Fyne and Kaiju
-func NewFyneKaijuBridge(host *engine.Host, menuManager *MenuManager) *FyneKaijuBridge {
+// NewFyneKaijuBridge creates a new bridge between Fyne and game systems
+func NewFyneKaijuBridge(host *engine.Host) *FyneKaijuBridge {
 	fyneApp := app.New()
 
 	bridge := &FyneKaijuBridge{
-		app:         fyneApp,
-		host:        host,
-		menuManager: menuManager,
-		fyneUI:      NewModernFyneUI(host),
+		app:  fyneApp,
+		host: host,
 	}
 
 	return bridge
@@ -166,18 +163,20 @@ func (b *FyneKaijuBridge) handleGitHubLogin() {
 func (b *FyneKaijuBridge) handleGameModeSelect(mode string) {
 	println("Game mode selected:", mode)
 
-	// Hide Fyne window and switch to Kaiju game
+	// Hide Fyne window
 	b.HideFyne()
 
-	// Use existing Kaiju menu system for game modes
+	// Handle game modes
 	switch mode {
 	case "singleplayer":
-		b.menuManager.showWorldSelect()
+		println("Starting singleplayer game...")
+		// TODO: Start singleplayer game
 	case "multiplayer":
-		// Use ShowMenu with MenuTypeMain for multiplayer (fallback)
-		b.menuManager.ShowMenu(MenuTypeMain)
+		println("Starting multiplayer game...")
+		// TODO: Start multiplayer game
 	case "settings":
-		b.menuManager.showSettings()
+		println("Opening settings...")
+		// TODO: Open settings
 	}
 }
 
@@ -203,10 +202,10 @@ func (b *FyneKaijuBridge) ShowFyne() {
 	}
 }
 
-// SwitchToKaiju switches back to Kaiju UI system
+// SwitchToKaiju switches back to main menu
 func (b *FyneKaijuBridge) SwitchToKaiju() {
 	b.HideFyne()
-	b.menuManager.ShowMenu(MenuTypeMain)
+	b.ShowFyneLogin()
 }
 
 // IsFyneActive returns true if Fyne UI is currently active
