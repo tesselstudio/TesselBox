@@ -18,7 +18,14 @@ func ExampleUsage() {
 
 	// Simulate successful authentication
 	// In a real implementation, this would be called by OAuth callback
-	menuManager.HandleAuthenticationSuccess("dev_player", "github_avatar_123")
+	user := &GitHubUser{
+		ID:        123,
+		Login:     "dev_player",
+		Name:      "Developer Player",
+		Email:     "dev@example.com",
+		AvatarURL: "github_avatar_123",
+	}
+	menuManager.HandleAuthenticationSuccess(user)
 
 	// Now the game selection screen is visible with user info
 	gameSelectScreen := menuManager.GetGameSelectScreen()

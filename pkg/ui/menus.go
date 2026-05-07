@@ -6,8 +6,18 @@ import (
 	"time"
 
 	"github.com/tesselstudio/TesselBox/pkg/world"
+	"kaijuengine.com/engine"
 	"kaijuengine.com/matrix"
 )
+
+// GitHubUser represents a GitHub user profile (simplified for UI integration)
+type GitHubUser struct {
+	ID        int    `json:"id"`
+	Login     string `json:"login"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	AvatarURL string `json:"avatar_url"`
+}
 
 // MenuType represents different menu types
 type MenuType int
@@ -30,6 +40,10 @@ type MenuManager struct {
 	currentMenu MenuType
 	menus       map[MenuType]*Menu
 	visible     bool
+
+	// Fyne integration
+	fyneBridge *FyneKaijuBridge
+	useFyne    bool
 
 	// Callbacks
 	onStartGame     func(worldName string, seed int64)
@@ -942,21 +956,52 @@ func (mm *MenuManager) ShowGameSelectScreen() {
 }
 
 // SetAuthenticatedUser sets the authenticated user information
-func (mm *MenuManager) SetAuthenticatedUser(username string, avatarID string) {
-	if gameSelectScreen := mm.GetGameSelectScreen(); gameSelectScreen != nil {
-		gameSelectScreen.SetUser(username, avatarID, true)
+func (mm *MenuManager) SetAuthenticatedUser(user *GitHubUser) {
+	if loginScreen := mm.GetLoginScreen(); loginScreen != nil {
+		// TODO: Implement SetUser method in LoginScreen
+		// loginScreen.SetUser(user)
 	}
 }
 
 // HandleAuthenticationSuccess handles successful authentication
-func (mm *MenuManager) HandleAuthenticationSuccess(username string, avatarID string) {
-	mm.SetAuthenticatedUser(username, avatarID)
+func (mm *MenuManager) HandleAuthenticationSuccess(user *GitHubUser) {
+	mm.SetAuthenticatedUser(user)
 	mm.ShowGameSelectScreen()
 }
 
 // HandleSignOut handles user sign out
 func (mm *MenuManager) HandleSignOut() {
-	// Clear authentication state
-	// In a real implementation, this would clear tokens/sessions
+	mm.SetAuthenticatedUser(nil)
 	mm.ShowLoginScreen()
+}
+
+// EnableFyneUI enables Fyne UI integration
+func (mm *MenuManager) EnableFyneUI(host *engine.Host) {
+	if mm.fyneBridge == nil {
+		mm.fyneBridge = NewFyneKaijuBridge(host, mm)
+	}
+	mm.useFyne = true
+}
+
+// DisableFyneUI disables Fyne UI integration
+func (mm *MenuManager) DisableFyneUI() {
+	mm.useFyne = false
+	if mm.fyneBridge != nil {
+		mm.fyneBridge.HideFyne()
+	}
+}
+
+// ShowFyneLogin displays Fyne login screen
+func (mm *MenuManager) ShowFyneLogin() {
+	if mm.fyneBridge != nil {
+		mm.fyneBridge.ShowFyneLogin()
+	}
+}
+
+// IsFyneActive returns true if Fyne UI is currently active
+func (mm *MenuManager) IsFyneActive() bool {
+	if mm.fyneBridge != nil {
+		return mm.fyneBridge.IsFyneActive()
+	}
+	return false
 }
