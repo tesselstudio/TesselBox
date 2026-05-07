@@ -27,3 +27,4 @@ Violations may be reported by contacting the project team.
 ## Scope
 
 This code applies within all project spaces and public representations of the project.
+

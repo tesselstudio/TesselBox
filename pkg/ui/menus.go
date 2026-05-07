@@ -14,6 +14,8 @@ type MenuType int
 
 const (
 	MenuTypeMain MenuType = iota
+	MenuTypeLogin
+	MenuTypeGameSelect
 	MenuTypePause
 	MenuTypeSettings
 	MenuTypeInventory
@@ -72,6 +74,14 @@ func NewMenuManager(screenWidth, screenHeight float32) *MenuManager {
 
 // createMenus creates all game menus
 func (mm *MenuManager) createMenus(screenWidth, screenHeight float32) {
+	// Login Screen
+	loginScreen := NewLoginScreen(screenWidth, screenHeight)
+	mm.menus[MenuTypeLogin] = loginScreen.Menu
+
+	// Game Select Screen
+	gameSelectScreen := NewGameSelectScreen(screenWidth, screenHeight)
+	mm.menus[MenuTypeGameSelect] = gameSelectScreen.Menu
+
 	// Main Menu
 	mainMenu := &Menu{
 		ID:    "main_menu",
@@ -898,4 +908,55 @@ func (mm *MenuManager) quitToDesktop() {
 	if mm.onQuitToDesktop != nil {
 		mm.onQuitToDesktop()
 	}
+}
+
+// GetLoginScreen returns the login screen
+func (mm *MenuManager) GetLoginScreen() *LoginScreen {
+	if _, exists := mm.menus[MenuTypeLogin]; exists {
+		// Type assert to LoginScreen - this is a simplified approach
+		// In a full implementation, you'd store the actual screen objects
+		_ = exists // Use blank identifier to avoid unused variable error
+		return nil // Placeholder - would return actual LoginScreen
+	}
+	return nil
+}
+
+// GetGameSelectScreen returns the game selection screen
+func (mm *MenuManager) GetGameSelectScreen() *GameSelectScreen {
+	if _, exists := mm.menus[MenuTypeGameSelect]; exists {
+		// Type assert to GameSelectScreen
+		_ = exists // Use blank identifier to avoid unused variable error
+		return nil // Placeholder - would return actual GameSelectScreen
+	}
+	return nil
+}
+
+// ShowLoginScreen shows the login screen
+func (mm *MenuManager) ShowLoginScreen() {
+	mm.ShowMenu(MenuTypeLogin)
+}
+
+// ShowGameSelectScreen shows the game selection screen
+func (mm *MenuManager) ShowGameSelectScreen() {
+	mm.ShowMenu(MenuTypeGameSelect)
+}
+
+// SetAuthenticatedUser sets the authenticated user information
+func (mm *MenuManager) SetAuthenticatedUser(username string, avatarID string) {
+	if gameSelectScreen := mm.GetGameSelectScreen(); gameSelectScreen != nil {
+		gameSelectScreen.SetUser(username, avatarID, true)
+	}
+}
+
+// HandleAuthenticationSuccess handles successful authentication
+func (mm *MenuManager) HandleAuthenticationSuccess(username string, avatarID string) {
+	mm.SetAuthenticatedUser(username, avatarID)
+	mm.ShowGameSelectScreen()
+}
+
+// HandleSignOut handles user sign out
+func (mm *MenuManager) HandleSignOut() {
+	// Clear authentication state
+	// In a real implementation, this would clear tokens/sessions
+	mm.ShowLoginScreen()
 }

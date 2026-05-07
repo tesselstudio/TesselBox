@@ -22,6 +22,7 @@ import (
 	"github.com/tesselstudio/TesselBox/pkg/crafting"
 	"github.com/tesselstudio/TesselBox/pkg/game"
 	"github.com/tesselstudio/TesselBox/pkg/network"
+	"github.com/tesselstudio/TesselBox/pkg/oauth"
 	"github.com/tesselstudio/TesselBox/pkg/world"
 )
 
@@ -30,11 +31,12 @@ var Version = "dev"
 
 // TesselBoxGame represents the main game state
 type TesselBoxGame struct {
-	host       *engine.Host
-	controller *game.Controller
-	updateId   engine.UpdateId
-	currentDoc interface{}
-	stateMutex sync.RWMutex
+	host        *engine.Host
+	controller  *game.Controller
+	updateId    engine.UpdateId
+	currentDoc  interface{}
+	stateMutex  sync.RWMutex
+	oauthConfig *oauth.Config
 }
 
 // PluginRegistry returns the plugin types for this game
@@ -181,6 +183,16 @@ func (g *TesselBoxGame) Launch(host *engine.Host) {
 	println("DEBUG: Launch starting...")
 	g.host = host
 
+	// Initialize OAuth configuration
+	oauthConfig, err := oauth.LoadConfig()
+	if err != nil {
+		println("DEBUG: OAuth config not found, OAuth login will be disabled:", err.Error())
+		g.oauthConfig = nil
+	} else {
+		g.oauthConfig = oauthConfig
+		println("DEBUG: OAuth configuration loaded")
+	}
+
 	// Initialize UI Manager
 	println("DEBUG: Initializing UI Manager...")
 	uiManager.Init(host)
@@ -256,20 +268,83 @@ func (g *TesselBoxGame) showLoginScreen() {
 		}
 	}
 
-	// Setup login handlers
-	loginButton, ok := doc.GetElementById("loginButton")
-	if ok {
-		btn := loginButton.UI.ToButton()
-		btn.Base().AddEvent(ui.EventTypeClick, func() {
-			g.playUIClick()
-			g.transitionToMainMenu()
-		})
+	// Setup login handlers with better error handling
+	if loginButton, ok := doc.GetElementById("loginButton"); ok {
+		if loginButton.UI != nil {
+			btn := loginButton.UI.ToButton()
+			if btn != nil && btn.Base() != nil {
+				btn.Base().Entity().Activate()
+				btn.Base().AddEvent(ui.EventTypeClick, func() {
+					println("DEBUG: Login button clicked!")
+					g.playUIClick()
+					g.transitionToMainMenu()
+				})
+				println("DEBUG: Login button handler set up successfully")
+			} else {
+				println("DEBUG: Failed to convert login button")
+			}
+		} else {
+			println("DEBUG: Login button UI is nil")
+		}
+	} else {
+		println("DEBUG: Login button element not found")
 	}
 
-	// Focus username input
+	// Setup GitHub OAuth login button with better error handling
+	if githubLoginButton, ok := doc.GetElementById("githubLoginButton"); ok {
+		if githubLoginButton.UI != nil {
+			btn := githubLoginButton.UI.ToButton()
+			if btn != nil && btn.Base() != nil {
+				btn.Base().Entity().Activate()
+				btn.Base().AddEvent(ui.EventTypeClick, func() {
+					println("DEBUG: GitHub OAuth button clicked!")
+					g.playUIClick()
+					g.initiateGitHubOAuth()
+				})
+				println("DEBUG: GitHub OAuth button handler set up successfully")
+			} else {
+				println("DEBUG: Failed to convert GitHub OAuth button")
+			}
+		} else {
+			println("DEBUG: GitHub OAuth button UI is nil")
+		}
+	} else {
+		println("DEBUG: GitHub OAuth button element not found")
+	}
+
+	// Focus username input with better error handling
 	if usernameInput, ok := doc.GetElementById("usernameInput"); ok {
-		userInput := usernameInput.UI.ToInput()
-		userInput.Focus()
+		if usernameInput.UI != nil {
+			userInput := usernameInput.UI.ToInput()
+			if userInput != nil {
+				userInput.Base().Entity().Activate()
+				userInput.Focus()
+				println("DEBUG: Username input focused successfully")
+			} else {
+				println("DEBUG: Failed to convert username input")
+			}
+		} else {
+			println("DEBUG: Username input UI is nil")
+		}
+	} else {
+		println("DEBUG: Username input element not found")
+	}
+
+	// Setup password input
+	if passwordInput, ok := doc.GetElementById("passwordInput"); ok {
+		if passwordInput.UI != nil {
+			passInput := passwordInput.UI.ToInput()
+			if passInput != nil {
+				passInput.Base().Entity().Activate()
+				println("DEBUG: Password input activated successfully")
+			} else {
+				println("DEBUG: Failed to convert password input")
+			}
+		} else {
+			println("DEBUG: Password input UI is nil")
+		}
+	} else {
+		println("DEBUG: Password input element not found")
 	}
 
 	// Add ESC handler for quit - defer to ensure window is ready
@@ -1164,6 +1239,43 @@ func (g *TesselBoxGame) performCraft() {
 // registerStateCallbacks registers callbacks for state changes
 func (g *TesselBoxGame) registerStateCallbacks() {
 	// State change callbacks can be added here
+}
+
+// initiateGitHubOAuth starts the GitHub OAuth flow
+func (g *TesselBoxGame) initiateGitHubOAuth() {
+	if g.oauthConfig == nil {
+		println("DEBUG: OAuth not configured")
+		g.showLoginError("GitHub OAuth is not configured. Please set up environment variables.")
+		return
+	}
+
+	// Start OAuth server in a goroutine
+	go func() {
+		authServer := oauth.NewAuthServer(g.oauthConfig)
+		if err := authServer.StartServer(); err != nil {
+			println("DEBUG: OAuth server failed to start:", err.Error())
+		}
+	}()
+
+	// Open browser for OAuth
+	authURL := fmt.Sprintf("http://%s:%s/auth/github/login", g.oauthConfig.ServerHost, g.oauthConfig.ServerPort)
+	println("DEBUG: Opening OAuth URL:", authURL)
+
+	// In a real implementation, you would open the system browser
+	// For now, we'll just transition to main menu as a fallback
+	g.transitionToMainMenu()
+}
+
+// showLoginError displays an error message on the login screen
+func (g *TesselBoxGame) showLoginError(message string) {
+	g.stateMutex.Lock()
+	defer g.stateMutex.Unlock()
+
+	if g.currentDoc != nil {
+		// Try to get the status message element and set error text
+		// This is a simplified implementation - in production you'd have proper UI element handling
+		println("DEBUG: Login error:", message)
+	}
 }
 
 // createFallbackLoginScreen creates a basic login UI programmatically

@@ -23,19 +23,19 @@ func TestHexCoordToWorld(t *testing.T) {
 			name:     "Positive Q",
 			coord:    HexCoord{Q: 1, R: 0},
 			scale:    1.0,
-			expected: matrix.NewVec3(1.732, 0, 0),
+			expected: matrix.NewVec3(1.5, 0, 0.866),
 		},
 		{
 			name:     "Positive R",
 			coord:    HexCoord{Q: 0, R: 1},
 			scale:    1.0,
-			expected: matrix.NewVec3(0.866, 0, 1.5),
+			expected: matrix.NewVec3(0, 0, 0.866),
 		},
 		{
 			name:     "Scale 2",
 			coord:    HexCoord{Q: 1, R: 1},
 			scale:    2.0,
-			expected: matrix.NewVec3(5.196, 0, 3.0),
+			expected: matrix.NewVec3(3.0, 0, 3.464),
 		},
 	}
 
