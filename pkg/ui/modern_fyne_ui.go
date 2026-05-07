@@ -18,12 +18,12 @@ type ModernFyneUI struct {
 // NewModernFyneUI creates a new modern Fyne UI
 func NewModernFyneUI(host *engine.Host) *ModernFyneUI {
 	fyneApp := app.New()
-	
+
 	ui := &ModernFyneUI{
 		app:  fyneApp,
-		host:  host,
+		host: host,
 	}
-	
+
 	return ui
 }
 
@@ -33,34 +33,34 @@ func (f *ModernFyneUI) ShowLogin() {
 		f.window.Show()
 		return
 	}
-	
+
 	f.window = f.app.NewWindow("TesselBox - Modern Login")
 	f.window.Resize(fyne.NewSize(400, 500))
 	f.window.CenterOnScreen()
-	
+
 	// Modern login form
 	titleLabel := widget.NewLabel("Welcome to TesselBox")
 	titleLabel.TextStyle = fyne.TextStyle{Bold: true}
-	
+
 	subtitleLabel := widget.NewLabel("Sign in to your account")
-	subtitleLabel.TextStyle = fyne.TextStyle{Size: fyne.NewSize(14, 14)}
-	
+	subtitleLabel.TextStyle = fyne.TextStyle{}
+
 	usernameEntry := widget.NewEntry()
 	usernameEntry.SetPlaceHolder("Username or Email")
-	
+
 	passwordEntry := widget.NewPasswordEntry()
 	passwordEntry.SetPlaceHolder("Password")
-	
+
 	loginBtn := widget.NewButton("Sign In", func() {
 		// TODO: Integrate with existing authentication
 		println("Login:", usernameEntry.Text)
 	})
-	
+
 	githubBtn := widget.NewButton("Continue with GitHub", func() {
 		// TODO: Integrate with GitHub OAuth
 		println("GitHub OAuth")
 	})
-	
+
 	// Modern card layout
 	loginCard := container.NewVBox(
 		titleLabel,
@@ -76,14 +76,14 @@ func (f *ModernFyneUI) ShowLogin() {
 			githubBtn,
 		),
 	)
-	
+
 	// Add padding and center
 	content := container.NewVBox(
 		widget.NewLabel(""), // Top spacer
 		loginCard,
 		widget.NewLabel(""), // Bottom spacer
 	)
-	
+
 	f.window.SetContent(content)
 	f.window.Show()
 }
@@ -94,48 +94,47 @@ func (f *ModernFyneUI) ShowGameSelect() {
 		f.window.Show()
 		return
 	}
-	
+
 	f.window = f.app.NewWindow("TesselBox - Game Mode")
 	f.window.Resize(fyne.NewSize(600, 400))
 	f.window.CenterOnScreen()
-	
+
 	titleLabel := widget.NewLabel("Select Game Mode")
 	titleLabel.TextStyle = fyne.TextStyle{Bold: true}
-	
-	singleplayerBtn := widget.NewButton("Singleplayer", func() {
-		println("Singleplayer selected")
-	})
-	
-	multiplayerBtn := widget.NewButton("Multiplayer", func() {
-		println("Multiplayer selected")
-	})
-	
-	settingsBtn := widget.NewButton("Settings", func() {
-		println("Settings selected")
-	})
-	
+
 	// Game mode cards
-	gameCards := container.NewHBox(
-		f.createGameModeCard("🎮 Singleplayer", "Start a new singleplayer world"),
-		f.createGameModeCard("👥 Multiplayer", "Join or host multiplayer games"),
-		f.createGameModeCard("⚙️ Settings", "Configure game settings"),
+	singleplayerCard := container.NewVBox(
+		widget.NewLabel("🎮 Singleplayer"),
+		widget.NewLabel("Singleplayer"),
+		widget.NewLabel("Start a new singleplayer world"),
 	)
-	
+
+	multiplayerCard := container.NewVBox(
+		widget.NewLabel("👥 Multiplayer"),
+		widget.NewLabel("Multiplayer"),
+		widget.NewLabel("Join or host multiplayer games"),
+	)
+
+	settingsCard := container.NewVBox(
+		widget.NewLabel("⚙️ Settings"),
+		widget.NewLabel("Settings"),
+		widget.NewLabel("Configure game settings"),
+	)
+
+	gameCards := container.NewHBox(
+		singleplayerCard,
+		multiplayerCard,
+		settingsCard,
+	)
+
 	content := container.NewVBox(
 		titleLabel,
 		widget.NewSeparator(),
 		gameCards,
 	)
-	
+
 	f.window.SetContent(content)
 	f.window.Show()
-}
-
-// createGameModeCard creates a styled game mode card
-func (f *ModernFyneUI) createGameModeCard(title, description string) *widget.Card {
-	card := widget.NewCard(title, description)
-	
-	return card
 }
 
 // Hide closes the Fyne window

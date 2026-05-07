@@ -23,6 +23,7 @@ import (
 	"github.com/tesselstudio/TesselBox/pkg/game"
 	"github.com/tesselstudio/TesselBox/pkg/network"
 	"github.com/tesselstudio/TesselBox/pkg/oauth"
+	tesselui "github.com/tesselstudio/TesselBox/pkg/ui"
 	"github.com/tesselstudio/TesselBox/pkg/world"
 )
 
@@ -31,12 +32,13 @@ var Version = "dev"
 
 // TesselBoxGame represents the main game state
 type TesselBoxGame struct {
-	host        *engine.Host
-	controller  *game.Controller
-	updateId    engine.UpdateId
-	currentDoc  interface{}
-	stateMutex  sync.RWMutex
-	oauthConfig *oauth.Config
+	host          *engine.Host
+	controller    *game.Controller
+	updateId      engine.UpdateId
+	currentDoc    interface{}
+	stateMutex    sync.RWMutex
+	oauthConfig   *oauth.Config
+	uiIntegration *tesselui.GameUIIntegration
 }
 
 // PluginRegistry returns the plugin types for this game
@@ -180,58 +182,61 @@ var uiManager ui.Manager
 
 // Launch initializes the game
 func (g *TesselBoxGame) Launch(host *engine.Host) {
-	println("DEBUG: Launch starting...")
+	println("🚀 TesselBox Starting...")
 	g.host = host
 
 	// Initialize OAuth configuration
 	oauthConfig, err := oauth.LoadConfig()
 	if err != nil {
-		println("DEBUG: OAuth config not found, OAuth login will be disabled:", err.Error())
+		println("⚠️ OAuth config not found, OAuth login will be disabled:", err.Error())
 		g.oauthConfig = nil
 	} else {
 		g.oauthConfig = oauthConfig
-		println("DEBUG: OAuth configuration loaded")
+		println("✅ OAuth configuration loaded")
 	}
 
-	// Initialize UI Manager
-	println("DEBUG: Initializing UI Manager...")
-	uiManager.Init(host)
-	println("DEBUG: UI Manager initialized")
+	// Initialize Fyne UI Integration
+	println("🎨 Initializing Modern UI...")
+	g.uiIntegration = tesselui.NewGameUIIntegration(host)
+	g.uiIntegration.Initialize()
+	println("✅ Modern UI initialized")
 
 	// Initialize audio system
-	println("DEBUG: Initializing audio...")
+	println("🔊 Initializing audio...")
 	audioManager := audio.GetManager()
 	if err := audioManager.Initialize(); err != nil {
 		// Audio is optional, log but continue
-		println("Warning: Audio initialization failed:", err.Error())
+		println("⚠️ Audio initialization failed:", err.Error())
+	} else {
+		println("✅ Audio initialized")
 	}
 
 	// Create game controller
-	println("DEBUG: Creating controller...")
+	println("🎮 Creating controller...")
 	g.controller = game.NewController(host)
-	println("DEBUG: Controller created")
+	println("✅ Controller created")
 
 	// Register state change callback
 	g.registerStateCallbacks()
 
-	// Show login screen (create UI before showing window)
-	println("DEBUG: Showing login screen...")
-	g.showLoginScreen()
-	println("DEBUG: Login screen shown")
+	// Show login screen with Fyne UI
+	println("🔑 Showing login screen...")
+	g.uiIntegration.ShowLogin()
+	println("✅ Login screen shown")
 
-	// Show the window after UI is ready - critical for window to appear with content
-	println("DEBUG: About to show window...")
+	// Show the window after UI is ready
+	println("🪟 Showing window...")
 	if host.Window != nil {
 		host.Window.Show()
-		println("DEBUG: Window shown")
+		println("✅ Window shown")
 	} else {
-		println("DEBUG: Window is nil!")
+		println("⚠️ Window is nil!")
 	}
 
 	// Register update function for game loop
-	println("DEBUG: Registering update...")
+	println("🔄 Registering update...")
 	g.updateId = host.Updater.AddUpdate(g.update)
-	println("DEBUG: Launch complete")
+	println("🎉 Launch complete - Game is ready!")
 }
 
 // playUIClick plays the UI click sound
@@ -1315,5 +1320,32 @@ func getGame() bootstrap.GameInterface {
 }
 
 func main() {
+	// Check for command line arguments
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "--game":
+			RunGameMode()
+			return
+		case "--fyne":
+			// Force Fyne UI mode
+			os.Setenv("TESSELBOX_USE_FYNE", "true")
+			RunGameMode()
+			return
+		case "--kaiju":
+			// Force Kaiju UI mode
+			os.Setenv("TESSELBOX_USE_FYNE", "false")
+			bootstrap.Main(getGame(), nil)
+			return
+		}
+	}
+
+	// Check environment variable for UI preference
+	useFyne := os.Getenv("TESSELBOX_USE_FYNE")
+	if useFyne == "true" {
+		RunGameMode()
+		return
+	}
+
+	// Default behavior - run bootstrap system
 	bootstrap.Main(getGame(), nil)
 }
