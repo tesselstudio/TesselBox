@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/tesselstudio/TesselBox/pkg/blocks"
-	"kaijuengine.com/matrix"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
 // ChunkManager manages loading, unloading, and rendering of chunks
@@ -164,10 +164,10 @@ func (cm *ChunkManager) SetBlock(worldX, worldY, worldZ int, block BlockData) {
 }
 
 // Update updates chunk loading based on player position
-func (cm *ChunkManager) Update(playerPos matrix.Vec3) {
+func (cm *ChunkManager) Update(playerPos types.Vec3) {
 	// Convert player position to chunk coordinate
-	playerChunkX := int(math.Floor(float64(playerPos.X()) / float64(ChunkSize)))
-	playerChunkZ := int(math.Floor(float64(playerPos.Z()) / float64(ChunkSize)))
+	playerChunkX := int(math.Floor(float64(playerPos.GetX()) / float64(ChunkSize)))
+	playerChunkZ := int(math.Floor(float64(playerPos.GetZ()) / float64(ChunkSize)))
 	newPlayerChunk := ChunkCoord{X: playerChunkX, Z: playerChunkZ}
 
 	// Check if player moved to a new chunk
@@ -301,11 +301,11 @@ func (cm *ChunkManager) rebuildDirtyMeshes() {
 // buildChunkMesh builds the renderable mesh for a chunk
 func (cm *ChunkManager) buildChunkMesh(chunk *Chunk) *ChunkMesh {
 	// Simplified mesh building - in production this would use greedy meshing
-	var vertices []matrix.Vec3
+	var vertices []types.Vec3
 	var indices []uint32
-	var normals []matrix.Vec3
-	var uvs []matrix.Vec2
-	var colors []matrix.Color
+	var normals []types.Vec3
+	var uvs []types.Vec2
+	var colors []types.Color
 
 	vertexOffset := 0
 
@@ -385,9 +385,9 @@ func (cm *ChunkManager) isBlockVisible(chunk *Chunk, x, y, z int) bool {
 }
 
 // generateBlockMesh generates mesh data for a single block
-func (cm *ChunkManager) generateBlockMesh(x, y, z int, block BlockData) ([]matrix.Vec3, []uint32, []matrix.Vec3, []matrix.Vec2, []matrix.Color) {
+func (cm *ChunkManager) generateBlockMesh(x, y, z int, block BlockData) ([]types.Vec3, []uint32, []types.Vec3, []types.Vec2, []types.Color) {
 	// Create a hex prism for this block
-	center := matrix.NewVec3(float32(x), float32(y), float32(z))
+	center := types.NewVec3(float32(x), float32(y), float32(z))
 	prism := blocks.NewHexPrism(center, 0.5, 1.0)
 
 	vertices := prism.GenerateVertices()
@@ -397,7 +397,7 @@ func (cm *ChunkManager) generateBlockMesh(x, y, z int, block BlockData) ([]matri
 
 	// Color based on block type
 	color := cm.getBlockColor(block.ID)
-	colors := make([]matrix.Color, len(vertices))
+	colors := make([]types.Color, len(vertices))
 	for i := range colors {
 		colors[i] = color
 	}
@@ -406,22 +406,22 @@ func (cm *ChunkManager) generateBlockMesh(x, y, z int, block BlockData) ([]matri
 }
 
 // getBlockColor returns the color for a block type
-func (cm *ChunkManager) getBlockColor(id BlockID) matrix.Color {
+func (cm *ChunkManager) getBlockColor(id BlockID) types.Color {
 	switch id {
 	case BlockIDStone:
-		return matrix.ColorGray()
+		return types.ColorGray()
 	case BlockIDDirt:
-		return matrix.NewColor(139, 90, 43, 255)
+		return types.NewColor(139, 90, 43, 255)
 	case BlockIDGrass:
-		return matrix.NewColor(124, 252, 0, 255)
+		return types.NewColor(124, 252, 0, 255)
 	case BlockIDWood:
-		return matrix.NewColor(139, 69, 19, 255)
+		return types.NewColor(139, 69, 19, 255)
 	case BlockIDGlass:
-		return matrix.NewColor(200, 200, 255, 128)
+		return types.NewColor(200, 200, 255, 128)
 	case BlockIDWater:
-		return matrix.NewColor(64, 164, 223, 180)
+		return types.NewColor(64, 164, 223, 180)
 	default:
-		return matrix.ColorWhite()
+		return types.ColorWhite()
 	}
 }
 

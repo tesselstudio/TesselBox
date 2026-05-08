@@ -5,23 +5,21 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"kaijuengine.com/engine"
 )
 
 // ModernFyneUI provides a modern webview-based UI using Fyne
 type ModernFyneUI struct {
-	app    fyne.App
-	window fyne.Window
-	host   *engine.Host
+	app            fyne.App
+	window         fyne.Window
+	onLoginSuccess func()
 }
 
 // NewModernFyneUI creates a new modern Fyne UI
-func NewModernFyneUI(host *engine.Host) *ModernFyneUI {
+func NewModernFyneUI() *ModernFyneUI {
 	fyneApp := app.New()
 
 	ui := &ModernFyneUI{
-		app:  fyneApp,
-		host: host,
+		app: fyneApp,
 	}
 
 	return ui
@@ -38,43 +36,51 @@ func (f *ModernFyneUI) ShowLogin() {
 	f.window.Resize(fyne.NewSize(400, 500))
 	f.window.CenterOnScreen()
 
-	// Modern login form
+	// Modern login form - GitHub OAuth only
 	titleLabel := widget.NewLabel("Welcome to TesselBox")
 	titleLabel.TextStyle = fyne.TextStyle{Bold: true}
 
-	subtitleLabel := widget.NewLabel("Sign in to your account")
+	subtitleLabel := widget.NewLabel("Sign in with GitHub")
 	subtitleLabel.TextStyle = fyne.TextStyle{}
 
-	usernameEntry := widget.NewEntry()
-	usernameEntry.SetPlaceHolder("Username or Email")
+	// GitHub authentication status
+	statusLabel := widget.NewLabel("Initializing GitHub OAuth...")
+	statusLabel.TextStyle = fyne.TextStyle{Italic: true}
 
-	passwordEntry := widget.NewPasswordEntry()
-	passwordEntry.SetPlaceHolder("Password")
+	githubBtn := widget.NewButton("Authenticate with GitHub", func() {
+		// Start GitHub OAuth flow
+		statusLabel.SetText("Connecting to GitHub...")
+		println("🔐 Starting GitHub OAuth authentication")
 
-	loginBtn := widget.NewButton("Sign In", func() {
-		// TODO: Integrate with existing authentication
-		println("Login:", usernameEntry.Text)
+		// Create GitHub auth handler
+		githubAuth := NewGitHubAuth(nil, func(user *GitHubUser, err error) {
+			if err != nil {
+				statusLabel.SetText("Authentication failed: " + err.Error())
+				return
+			}
+
+			statusLabel.SetText("✅ Authenticated as " + user.Login)
+			println("🎉 GitHub authentication successful!")
+
+			// Close login window and show game selection
+			f.Hide()
+			if f.onLoginSuccess != nil {
+				f.onLoginSuccess()
+			}
+		})
+
+		// Start GitHub authentication
+		githubAuth.Authenticate()
 	})
 
-	githubBtn := widget.NewButton("Continue with GitHub", func() {
-		// TODO: Integrate with GitHub OAuth
-		println("GitHub OAuth")
-	})
-
-	// Modern card layout
+	// Modern card layout - GitHub OAuth only
 	loginCard := container.NewVBox(
 		titleLabel,
 		subtitleLabel,
 		widget.NewSeparator(),
-		widget.NewLabel("Username"),
-		usernameEntry,
-		widget.NewLabel("Password"),
-		passwordEntry,
+		statusLabel,
 		widget.NewSeparator(),
-		container.NewHBox(
-			loginBtn,
-			githubBtn,
-		),
+		githubBtn,
 	)
 
 	// Add padding and center
@@ -137,6 +143,13 @@ func (f *ModernFyneUI) ShowGameSelect() {
 	f.window.Show()
 }
 
+// Run starts the Fyne application
+func (f *ModernFyneUI) Run() {
+	if f.app != nil {
+		f.app.Run()
+	}
+}
+
 // Hide closes the Fyne window
 func (f *ModernFyneUI) Hide() {
 	if f.window != nil {
@@ -148,12 +161,5 @@ func (f *ModernFyneUI) Hide() {
 func (f *ModernFyneUI) Show() {
 	if f.window != nil {
 		f.window.Show()
-	}
-}
-
-// Run starts the Fyne application
-func (f *ModernFyneUI) Run() {
-	if f.app != nil {
-		f.app.Run()
 	}
 }

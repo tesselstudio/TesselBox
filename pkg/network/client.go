@@ -7,94 +7,94 @@ import (
 	"net"
 	"sync"
 	"time"
-	
-	"kaijuengine.com/matrix"
+
+	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
 // Client represents the game client
 type Client struct {
-	conn       net.Conn
-	protocol   *Protocol
-	reader     *MessageReader
-	writer     *MessageWriter
-	
+	conn     net.Conn
+	protocol *Protocol
+	reader   *MessageReader
+	writer   *MessageWriter
+
 	// Connection state
-	connected    bool
-	playerID     uint32
-	serverAddr   string
-	
+	connected  bool
+	playerID   uint32
+	serverAddr string
+
 	// Client state
 	localPlayer  *LocalPlayer
 	otherPlayers map[uint32]*RemotePlayer
-	
+
 	// Callbacks
-	onConnect    func(uint32)
-	onDisconnect func()
-	onPlayerJoin func(*RemotePlayer)
+	onConnect     func(uint32)
+	onDisconnect  func()
+	onPlayerJoin  func(*RemotePlayer)
 	onPlayerLeave func(uint32)
-	onBlockPlace func(*BlockPlaceMessage)
-	onBlockBreak func(*BlockBreakMessage)
-	onChat       func(*ChatMessage)
-	
+	onBlockPlace  func(*BlockPlaceMessage)
+	onBlockBreak  func(*BlockBreakMessage)
+	onChat        func(*ChatMessage)
+
 	// Synchronization
-	mu           sync.RWMutex
-	ctx          context.Context
-	cancel       context.CancelFunc
-	
+	mu     sync.RWMutex
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	// Prediction
-	predictor    *ClientPredictor
+	predictor *ClientPredictor
 }
 
 // LocalPlayer represents the local player
 type LocalPlayer struct {
 	ID       uint32
 	Name     string
-	Position matrix.Vec3
-	Rotation matrix.Vec3
-	Velocity matrix.Vec3
+	Position types.Vec3
+	Rotation types.Vec3
+	Velocity types.Vec3
 	Health   uint16
 }
 
 // RemotePlayer represents a remote player
 type RemotePlayer struct {
-	ID       uint32
-	Name     string
-	Position matrix.Vec3
-	Rotation matrix.Vec3
-	Velocity matrix.Vec3
-	Health   uint16
+	ID         uint32
+	Name       string
+	Position   types.Vec3
+	Rotation   types.Vec3
+	Velocity   types.Vec3
+	Health     uint16
 	LastUpdate time.Time
 }
 
 // ClientPredictor handles client-side prediction
 type ClientPredictor struct {
 	inputHistory []InputState
-	sequence    uint32
+	sequence     uint32
 }
 
 // InputState represents a player's input state
 type InputState struct {
-	Sequence   uint32
-	Timestamp  uint64
-	Position   matrix.Vec3
-	Rotation   matrix.Vec3
-	Velocity   matrix.Vec3
-	InputMask  uint32 // Bit mask of input states
+	Sequence  uint32
+	Timestamp uint64
+	Position  types.Vec3
+	Rotation  types.Vec3
+	Velocity  types.Vec3
+	InputMask uint32 // Bit mask of input states
 }
 
 // ClientConfig holds client configuration
 type ClientConfig struct {
-	ServerAddr    string
-	PlayerName    string
-	TickRate      int
-	PingInterval  time.Duration
-	Timeout       time.Duration
+	ServerAddr   string
+	PlayerName   string
+	TickRate     int
+	PingInterval time.Duration
+	Timeout      time.Duration
 }
 
 // NewClient creates a new game client
 func NewClient(config ClientConfig) *Client {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &Client{
 		protocol:     NewProtocol(),
 		otherPlayers: make(map[uint32]*RemotePlayer),
@@ -111,37 +111,37 @@ func (c *Client) Connect(playerName string) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}
-	
+
 	c.conn = conn
 	c.reader = NewMessageReader(conn)
 	c.writer = NewMessageWriter(conn)
 	c.connected = true
-	
+
 	// Send handshake
 	handshake := &HandshakeMessage{
 		Version:    "1.0.0",
 		PlayerName: playerName,
 	}
-	
+
 	msg := &Message{
 		Type:      MessageTypeHandshake,
 		Data:      c.protocol.EncodeHandshake(handshake),
 		Timestamp: uint64(time.Now().UnixNano()),
 		PlayerID:  0,
 	}
-	
+
 	err = c.writer.WriteMessage(msg)
 	if err != nil {
 		conn.Close()
 		return fmt.Errorf("failed to send handshake: %w", err)
 	}
-	
+
 	// Start message reader
 	go c.readMessages()
-	
+
 	// Start ping loop
 	go c.pingLoop()
-	
+
 	log.Printf("Connected to server at %s", c.serverAddr)
 	return nil
 }
@@ -150,15 +150,15 @@ func (c *Client) Connect(playerName string) error {
 func (c *Client) Disconnect() {
 	c.cancel()
 	c.connected = false
-	
+
 	if c.conn != nil {
 		c.conn.Close()
 	}
-	
+
 	if c.onDisconnect != nil {
 		c.onDisconnect()
 	}
-	
+
 	log.Println("Disconnected from server")
 }
 
@@ -170,10 +170,10 @@ func (c *Client) readMessages() {
 			log.Printf("Error reading from server: %v", err)
 			break
 		}
-		
+
 		c.handleMessage(msg)
 	}
-	
+
 	c.Disconnect()
 }
 
@@ -182,34 +182,34 @@ func (c *Client) handleMessage(msg *Message) {
 	switch msg.Type {
 	case MessageTypeHandshakeResponse:
 		c.handleHandshakeResponse(msg)
-		
+
 	case MessageTypePlayerJoin:
 		c.handlePlayerJoin(msg)
-		
+
 	case MessageTypePlayerLeave:
 		c.handlePlayerLeave(msg)
-		
+
 	case MessageTypePlayerMove:
 		c.handlePlayerMove(msg)
-		
+
 	case MessageTypeBlockPlace:
 		c.handleBlockPlace(msg)
-		
+
 	case MessageTypeBlockBreak:
 		c.handleBlockBreak(msg)
-		
+
 	case MessageTypeChat:
 		c.handleChat(msg)
-		
+
 	case MessageTypeWorldUpdate:
 		c.handleWorldUpdate(msg)
-		
+
 	case MessageTypePong:
 		// Handle pong (ping measurement)
-		
+
 	case MessageTypeError:
 		c.handleError(msg)
-		
+
 	default:
 		log.Printf("Unknown message type: %v", msg.Type)
 	}
@@ -222,15 +222,15 @@ func (c *Client) handleHandshakeResponse(msg *Message) {
 		log.Printf("Error decoding handshake response: %v", err)
 		return
 	}
-	
+
 	if !response.Success {
 		log.Printf("Server rejected connection: %s", response.Message)
 		c.Disconnect()
 		return
 	}
-	
+
 	c.playerID = response.PlayerID
-	
+
 	// Create local player
 	c.mu.Lock()
 	c.localPlayer = &LocalPlayer{
@@ -238,9 +238,9 @@ func (c *Client) handleHandshakeResponse(msg *Message) {
 		Name: "", // Will be set from handshake
 	}
 	c.mu.Unlock()
-	
+
 	log.Printf("Connected as player %d", c.playerID)
-	
+
 	if c.onConnect != nil {
 		c.onConnect(c.playerID)
 	}
@@ -252,19 +252,19 @@ func (c *Client) handlePlayerJoin(msg *Message) {
 	player := &RemotePlayer{
 		ID:         msg.PlayerID,
 		Name:       "Unknown", // Will be decoded from message
-		Position:   matrix.NewVec3(0, 0, 0),
-		Rotation:   matrix.NewVec3(0, 0, 0),
-		Velocity:   matrix.NewVec3(0, 0, 0),
+		Position:   types.NewVec3(0, 0, 0),
+		Rotation:   types.NewVec3(0, 0, 0),
+		Velocity:   types.NewVec3(0, 0, 0),
 		Health:     100,
 		LastUpdate: time.Now(),
 	}
-	
+
 	c.mu.Lock()
 	c.otherPlayers[msg.PlayerID] = player
 	c.mu.Unlock()
-	
+
 	log.Printf("Player %d joined", msg.PlayerID)
-	
+
 	if c.onPlayerJoin != nil {
 		c.onPlayerJoin(player)
 	}
@@ -275,9 +275,9 @@ func (c *Client) handlePlayerLeave(msg *Message) {
 	c.mu.Lock()
 	delete(c.otherPlayers, msg.PlayerID)
 	c.mu.Unlock()
-	
+
 	log.Printf("Player %d left", msg.PlayerID)
-	
+
 	if c.onPlayerLeave != nil {
 		c.onPlayerLeave(msg.PlayerID)
 	}
@@ -290,7 +290,7 @@ func (c *Client) handlePlayerMove(msg *Message) {
 		log.Printf("Error decoding player move: %v", err)
 		return
 	}
-	
+
 	c.mu.Lock()
 	if move.PlayerID == c.playerID {
 		// Update local player (server correction)
@@ -318,9 +318,9 @@ func (c *Client) handleBlockPlace(msg *Message) {
 		log.Printf("Error decoding block place: %v", err)
 		return
 	}
-	
+
 	log.Printf("Block placed at %v by player %d", place.Position, place.PlayerID)
-	
+
 	if c.onBlockPlace != nil {
 		c.onBlockPlace(place)
 	}
@@ -330,7 +330,7 @@ func (c *Client) handleBlockPlace(msg *Message) {
 func (c *Client) handleBlockBreak(msg *Message) {
 	// Decode block break message
 	log.Printf("Block broken by player %d", msg.PlayerID)
-	
+
 	if c.onBlockBreak != nil {
 		// c.onBlockBreak(breakMsg)
 	}
@@ -340,7 +340,7 @@ func (c *Client) handleBlockBreak(msg *Message) {
 func (c *Client) handleChat(msg *Message) {
 	// Decode chat message
 	log.Printf("Chat message from player %d", msg.PlayerID)
-	
+
 	if c.onChat != nil {
 		// c.onChat(chatMsg)
 	}
@@ -362,7 +362,7 @@ func (c *Client) handleError(msg *Message) {
 func (c *Client) pingLoop() {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-	
+
 	for c.connected {
 		select {
 		case <-c.ctx.Done():
@@ -371,25 +371,25 @@ func (c *Client) pingLoop() {
 			ping := &PingMessage{
 				Timestamp: uint64(time.Now().UnixNano()),
 			}
-			
+
 			msg := &Message{
 				Type:      MessageTypePing,
 				Data:      []byte{}, // Simplified
 				Timestamp: ping.Timestamp,
 				PlayerID:  c.playerID,
 			}
-			
+
 			c.writer.WriteMessage(msg)
 		}
 	}
 }
 
 // SendPlayerMove sends player movement to server
-func (c *Client) SendPlayerMove(position, rotation, velocity matrix.Vec3) {
+func (c *Client) SendPlayerMove(position, rotation, velocity types.Vec3) {
 	if !c.connected {
 		return
 	}
-	
+
 	c.mu.Lock()
 	if c.localPlayer != nil {
 		c.localPlayer.Position = position
@@ -397,53 +397,53 @@ func (c *Client) SendPlayerMove(position, rotation, velocity matrix.Vec3) {
 		c.localPlayer.Velocity = velocity
 	}
 	c.mu.Unlock()
-	
+
 	move := &PlayerMoveMessage{
 		PlayerID: c.playerID,
 		Position: position,
 		Rotation: rotation,
 		Velocity: velocity,
 	}
-	
+
 	msg := &Message{
 		Type:      MessageTypePlayerMove,
 		Data:      c.protocol.EncodePlayerMove(move),
 		Timestamp: uint64(time.Now().UnixNano()),
 		PlayerID:  c.playerID,
 	}
-	
+
 	c.writer.WriteMessage(msg)
 }
 
 // SendBlockPlace sends block placement to server
-func (c *Client) SendBlockPlace(blockType uint8, position matrix.Vec3, rotation int) {
+func (c *Client) SendBlockPlace(blockType uint8, position types.Vec3, rotation int) {
 	if !c.connected {
 		return
 	}
-	
+
 	place := &BlockPlaceMessage{
 		PlayerID:  c.playerID,
 		BlockType: blockType,
 		Position:  position,
 		Rotation:  rotation,
 	}
-	
+
 	msg := &Message{
 		Type:      MessageTypeBlockPlace,
 		Data:      c.protocol.EncodeBlockPlace(place),
 		Timestamp: uint64(time.Now().UnixNano()),
 		PlayerID:  c.playerID,
 	}
-	
+
 	c.writer.WriteMessage(msg)
 }
 
 // SendBlockBreak sends block breaking to server
-func (c *Client) SendBlockBreak(position matrix.Vec3) {
+func (c *Client) SendBlockBreak(position types.Vec3) {
 	if !c.connected {
 		return
 	}
-	
+
 	// Create block break message
 	msg := &Message{
 		Type:      MessageTypeBlockBreak,
@@ -451,7 +451,7 @@ func (c *Client) SendBlockBreak(position matrix.Vec3) {
 		Timestamp: uint64(time.Now().UnixNano()),
 		PlayerID:  c.playerID,
 	}
-	
+
 	c.writer.WriteMessage(msg)
 }
 
@@ -460,7 +460,7 @@ func (c *Client) SendChat(message string) {
 	if !c.connected {
 		return
 	}
-	
+
 	// Create chat message
 	msg := &Message{
 		Type:      MessageTypeChat,
@@ -468,7 +468,7 @@ func (c *Client) SendChat(message string) {
 		Timestamp: uint64(time.Now().UnixNano()),
 		PlayerID:  c.playerID,
 	}
-	
+
 	c.writer.WriteMessage(msg)
 }
 
@@ -476,7 +476,7 @@ func (c *Client) SendChat(message string) {
 func (c *Client) GetLocalPlayer() *LocalPlayer {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	return c.localPlayer
 }
 
@@ -484,13 +484,13 @@ func (c *Client) GetLocalPlayer() *LocalPlayer {
 func (c *Client) GetOtherPlayers() map[uint32]*RemotePlayer {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	// Return a copy
 	players := make(map[uint32]*RemotePlayer)
 	for id, player := range c.otherPlayers {
 		players[id] = player
 	}
-	
+
 	return players
 }
 
@@ -505,7 +505,7 @@ func (c *Client) GetPlayerID() uint32 {
 }
 
 // SetCallbacks sets callback functions
-func (c *Client) SetCallbacks(onConnect func(uint32), onDisconnect func(), 
+func (c *Client) SetCallbacks(onConnect func(uint32), onDisconnect func(),
 	onPlayerJoin func(*RemotePlayer), onPlayerLeave func(uint32),
 	onBlockPlace func(*BlockPlaceMessage), onBlockBreak func(*BlockBreakMessage),
 	onChat func(*ChatMessage)) {
@@ -519,7 +519,7 @@ func (c *Client) SetCallbacks(onConnect func(uint32), onDisconnect func(),
 }
 
 // PredictMovement predicts client movement for smooth gameplay
-func (c *Client) PredictMovement(position, rotation, velocity matrix.Vec3, inputMask uint32) {
+func (c *Client) PredictMovement(position, rotation, velocity types.Vec3, inputMask uint32) {
 	// Add to prediction history
 	input := InputState{
 		Sequence:  c.predictor.sequence,
@@ -529,10 +529,10 @@ func (c *Client) PredictMovement(position, rotation, velocity matrix.Vec3, input
 		Velocity:  velocity,
 		InputMask: inputMask,
 	}
-	
+
 	c.predictor.inputHistory = append(c.predictor.inputHistory, input)
 	c.predictor.sequence++
-	
+
 	// Keep only recent history
 	if len(c.predictor.inputHistory) > 60 { // 1 second at 60 FPS
 		c.predictor.inputHistory = c.predictor.inputHistory[1:]
@@ -540,16 +540,16 @@ func (c *Client) PredictMovement(position, rotation, velocity matrix.Vec3, input
 }
 
 // ReconcileWithServer reconciles client prediction with server state
-func (c *Client) ReconcileWithServer(serverPosition matrix.Vec3) {
+func (c *Client) ReconcileWithServer(serverPosition types.Vec3) {
 	// Find the last acknowledged input
 	c.mu.RLock()
 	localPlayer := c.localPlayer
 	c.mu.RUnlock()
-	
+
 	if localPlayer == nil {
 		return
 	}
-	
+
 	// Check if we need to correct position
 	distance := localPlayer.Position.Distance(serverPosition)
 	if distance > 0.1 { // Threshold for correction
@@ -557,7 +557,7 @@ func (c *Client) ReconcileWithServer(serverPosition matrix.Vec3) {
 		c.mu.Lock()
 		localPlayer.Position = serverPosition
 		c.mu.Unlock()
-		
+
 		// Replay inputs from correction point
 		c.replayInputs()
 	}

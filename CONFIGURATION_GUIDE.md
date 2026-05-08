@@ -10,11 +10,11 @@ TesselBox now supports **two UI systems** that you can choose between:
 - ✅ Webview-based components
 - ✅ Recommended for most users
 
-### **Kaiju UI (Original)**
-- ✅ HTML-based interface
-- ✅ Existing game systems
-- ✅ Traditional styling
-- ✅ Good for compatibility
+### **OpenGL UI (Legacy)**
+- ✅ Custom OpenGL-based interface
+- ✅ Direct rendering integration
+- ✅ Minimal overhead
+- ✅ Good for performance
 
 ## 🚀 Quick Start
 
@@ -24,8 +24,8 @@ TesselBox now supports **two UI systems** that you can choose between:
 # Run with modern Fyne UI (default)
 ./run.sh
 
-# Run with original Kaiju UI
-./run.sh --kaiju
+# Run with OpenGL UI
+./run.sh --opengl
 
 # Run with hardware acceleration (Vulkan)
 ./run.sh --vulkan
@@ -44,7 +44,7 @@ TesselBox now supports **two UI systems** that you can choose between:
 export TESSELBOX_USE_FYNE=true
 go run .
 
-# Enable Kaiju UI
+# Enable OpenGL UI
 export TESSELBOX_USE_FYNE=false
 go run .
 
@@ -77,7 +77,7 @@ go run .
 
 | Option | Environment Variable | Default | Description |
 |--------|---------------------|---------|-------------|
-| UI System | `TESSELBOX_USE_FYNE` | `true` | `true` = Fyne, `false` = Kaiju |
+| UI System | `TESSELBOX_USE_FYNE` | `true` | `true` = Fyne, `false` = OpenGL |
 | Rendering | `TESSELBOX_USE_VULKAN` | `false` | `true` = Vulkan, `false` = Software |
 | Window Width | `TESSELBOX_WINDOW_WIDTH` | `1920` | Window width in pixels |
 | Window Height | `TESSELBOX_WINDOW_HEIGHT` | `1080` | Window height in pixels |
@@ -111,9 +111,9 @@ go run .
 
 ### **For Low-End Systems**
 ```bash
-./run.sh --kaiju --width 1024 --height 768
+./run.sh --opengl --width 1024 --height 768
 ```
-- Kaiju UI (lighter weight)
+- OpenGL UI (lighter weight)
 - Software rendering
 - Smaller resolution
 
@@ -129,7 +129,7 @@ go run .
 ### **UI Looks Bad**
 ```bash
 # Try the other UI system
-./run.sh --kaiju  # or --fyne
+./run.sh --opengl  # or --fyne
 ```
 
 ### **Performance Issues**
@@ -156,10 +156,10 @@ go run .
 - ✅ Native-looking components
 - ✅ Smooth transitions
 
-### **Kaiju UI Features**
-- ✅ HTML-based interface
-- ✅ Existing game systems
-- ✅ Custom styling
+### **OpenGL UI Features**
+- ✅ Custom OpenGL-based interface
+- ✅ Direct rendering integration
+- ✅ Minimal overhead
 - ✅ Proven stability
 
 ## 🔄 Switching Between UI Systems
@@ -171,7 +171,7 @@ You can switch between UI systems at any time:
 export TESSELBOX_USE_FYNE=true
 go run .
 
-# Switch to Kaiju
+# Switch to OpenGL
 export TESSELBOX_USE_FYNE=false
 go run .
 ```

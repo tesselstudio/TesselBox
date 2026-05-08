@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/tesselstudio/TesselBox/pkg/crafting"
-	"kaijuengine.com/matrix"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
 // PlayerData represents all serialized player state
@@ -122,12 +122,12 @@ func SerializePlayer(player *Player) *PlayerData {
 
 	data := &PlayerData{
 		Version:    CurrentDataVersion,
-		PosX:       player.position.X(),
-		PosY:       player.position.Y(),
-		PosZ:       player.position.Z(),
-		RotX:       player.rotation.X(),
-		RotY:       player.rotation.Y(),
-		RotZ:       player.rotation.Z(),
+		PosX:       player.position.X,
+		PosY:       player.position.Y,
+		PosZ:       player.position.Z,
+		RotX:       player.rotation.X,
+		RotY:       player.rotation.Y,
+		RotZ:       player.rotation.Z,
 		HotbarSlot: player.hotbarSlot,
 		LastSaved:  time.Now(),
 	}
@@ -160,13 +160,10 @@ func DeserializePlayer(player *Player, data *PlayerData) {
 	defer player.mu.Unlock()
 
 	// Restore position
-	player.position = matrix.NewVec3(data.PosX, data.PosY, data.PosZ)
-	if player.entity != nil {
-		player.entity.Transform.SetPosition(player.position)
-	}
+	player.position = types.NewVec3(data.PosX, data.PosY, data.PosZ)
 
 	// Restore rotation
-	player.rotation = matrix.NewVec3(data.RotX, data.RotY, data.RotZ)
+	player.rotation = types.NewVec3(data.RotX, data.RotY, data.RotZ)
 
 	// Restore hotbar slot
 	if data.HotbarSlot >= 0 && data.HotbarSlot < 9 {

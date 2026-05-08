@@ -9,25 +9,20 @@ import (
 	"github.com/tesselstudio/TesselBox/pkg/crafting"
 	"github.com/tesselstudio/TesselBox/pkg/effects"
 	"github.com/tesselstudio/TesselBox/pkg/survival"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 	"github.com/tesselstudio/TesselBox/pkg/world"
-	"kaijuengine.com/engine"
-	"kaijuengine.com/matrix"
 )
 
 // Player represents the local player in the game
 type Player struct {
 	mu sync.RWMutex
 
-	// Entity reference
-	entity *engine.Entity
-	host   *engine.Host
-
 	// Transform
-	position matrix.Vec3
-	rotation matrix.Vec3 // Pitch (X), Yaw (Y), Roll (Z)
+	position types.Vec3
+	rotation types.Vec3 // Pitch (X), Yaw (Y), Roll (Z)
 
 	// Physics
-	velocity matrix.Vec3
+	velocity types.Vec3
 	onGround bool
 	jumping  bool
 	sneaking bool
@@ -61,17 +56,16 @@ type Player struct {
 
 	// Footstep tracking
 	lastFootstepTime time.Time
-	lastPosition     matrix.Vec3
+	lastPosition     types.Vec3
 }
 
 // NewPlayer creates a new player
-func NewPlayer(host *engine.Host, worldRef *world.World) *Player {
+func NewPlayer(worldRef *world.World) *Player {
 	player := &Player{
-		host:          host,
 		worldRef:      worldRef,
-		position:      matrix.NewVec3(0, 70, 0),
-		rotation:      matrix.NewVec3(0, 0, 0),
-		velocity:      matrix.NewVec3(0, 0, 0),
+		position:      types.NewVec3(0, 70, 0),
+		rotation:      types.NewVec3(0, 0, 0),
+		velocity:      types.NewVec3(0, 0, 0),
 		walkSpeed:     4.3, // blocks per second
 		sprintSpeed:   5.6, // blocks per second
 		sneakSpeed:    1.3, // blocks per second
@@ -118,20 +112,6 @@ func (p *Player) giveStarterItems() {
 	}
 }
 
-// SetEntity sets the player's entity
-func (p *Player) SetEntity(entity *engine.Entity) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.entity = entity
-}
-
-// GetEntity returns the player's entity
-func (p *Player) GetEntity() *engine.Entity {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	return p.entity
-}
-
 // Update updates the player (called every frame)
 func (p *Player) Update(deltaTime float64) {
 	p.mu.Lock()
@@ -143,14 +123,14 @@ func (p *Player) Update(deltaTime float64) {
 
 	// Apply gravity
 	if !p.onGround {
-		p.velocity.SetY(p.velocity.Y() - p.gravity*dt)
+		p.velocity.Y = p.velocity.Y - p.gravity*dt
 	}
 
 	// Apply velocity to position
-	newPos := matrix.NewVec3(
-		p.position.X()+p.velocity.X()*dt,
-		p.position.Y()+p.velocity.Y()*dt,
-		p.position.Z()+p.velocity.Z()*dt,
+	newPos := types.NewVec3(
+		p.position.X+p.velocity.X*dt,
+		p.position.Y+p.velocity.Y*dt,
+		p.position.Z+p.velocity.Z*dt,
 	)
 
 	// Collision detection with world
@@ -162,16 +142,11 @@ func (p *Player) Update(deltaTime float64) {
 	p.onGround = p.checkOnGround()
 
 	// Apply friction
-	p.velocity.SetX(p.velocity.X() * 0.9)
-	p.velocity.SetZ(p.velocity.Z() * 0.9)
+	p.velocity.X = p.velocity.X * 0.9
+	p.velocity.Z = p.velocity.Z * 0.9
 
 	if p.onGround {
-		p.velocity.SetY(0)
-	}
-
-	// Update entity transform
-	if p.entity != nil {
-		p.entity.Transform.SetPosition(p.position)
+		p.velocity.Y = 0
 	}
 
 	// Update survival stats
@@ -179,36 +154,33 @@ func (p *Player) Update(deltaTime float64) {
 }
 
 // GetPosition returns the player's position
-func (p *Player) GetPosition() matrix.Vec3 {
+func (p *Player) GetPosition() types.Vec3 {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.position
 }
 
 // SetPosition sets the player's position
-func (p *Player) SetPosition(pos matrix.Vec3) {
+func (p *Player) SetPosition(pos types.Vec3) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.position = pos
-	if p.entity != nil {
-		p.entity.Transform.SetPosition(pos)
-	}
 }
 
 // GetRotation returns the player's rotation (pitch, yaw, roll)
-func (p *Player) GetRotation() matrix.Vec3 {
+func (p *Player) GetRotation() types.Vec3 {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.rotation
 }
 
 // SetRotation sets the player's rotation
-func (p *Player) SetRotation(rot matrix.Vec3) {
+func (p *Player) SetRotation(rot types.Vec3) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	// Clamp pitch to prevent flipping
-	pitch := rot.X()
+	pitch := rot.X
 	if pitch > 89.0 {
 		pitch = 89.0
 	} else if pitch < -89.0 {
@@ -216,9 +188,9 @@ func (p *Player) SetRotation(rot matrix.Vec3) {
 	}
 
 	// Normalize yaw
-	yaw := math.Mod(float64(rot.Y()), 360.0)
+	yaw := math.Mod(float64(rot.Y), 360.0)
 
-	p.rotation = matrix.NewVec3(pitch, float32(yaw), rot.Z())
+	p.rotation = types.NewVec3(pitch, float32(yaw), rot.Z)
 }
 
 // Move moves the player relative to their facing direction
@@ -235,16 +207,26 @@ func (p *Player) Move(forward, right float32, sprinting bool) {
 	}
 
 	// Get yaw in radians
-	yawRad := float64(p.rotation.Y()) * math.Pi / 180.0
+	yawRad := float64(p.rotation.Y) * math.Pi / 180.0
 
-	// Calculate movement vector
-	moveX := (forward*float32(math.Sin(yawRad)) + right*float32(math.Cos(yawRad))) * speed
-	moveZ := (forward*float32(math.Cos(yawRad)) - right*float32(math.Sin(yawRad))) * speed
+	// Calculate movement direction
+	forwardVec := types.NewVec3(
+		float32(-math.Sin(yawRad)),
+		0,
+		float32(-math.Cos(yawRad)),
+	)
 
-	p.velocity.SetX(moveX)
-	p.velocity.SetZ(moveZ)
+	rightVec := types.NewVec3(
+		float32(-math.Sin(yawRad+math.Pi/2)),
+		0,
+		float32(-math.Cos(yawRad+math.Pi/2)),
+	)
 
-	// Exhaust hunger when sprinting
+	// Apply movement
+	dt := float32(0.016) // 60 FPS timestep
+	p.velocity.X = p.velocity.X + forward*forwardVec.X*dt*speed + right*rightVec.X*dt*speed
+	p.velocity.Z = p.velocity.Z + forward*forwardVec.Z*dt*speed + right*rightVec.Z*dt*speed
+
 	if sprinting {
 		p.stats.Hunger.Exhaust(0.1)
 	}
@@ -256,12 +238,8 @@ func (p *Player) Jump() {
 	defer p.mu.Unlock()
 
 	if p.onGround && !p.jumping {
-		p.velocity.SetY(p.jumpForce)
 		p.jumping = true
-		p.onGround = false
-
-		// Exhaust hunger
-		p.stats.Hunger.Exhaust(0.05)
+		p.velocity.Y = p.jumpForce
 	}
 }
 
@@ -345,47 +323,47 @@ func (p *Player) GetReachDistance() float32 {
 }
 
 // Raycast performs a raycast from the player's eyes
-func (p *Player) Raycast(maxDistance float32) (hit bool, hitPos, hitNormal matrix.Vec3, hitBlock world.BlockData) {
+func (p *Player) Raycast(maxDistance float32) (hit bool, hitPos, hitNormal types.Vec3, hitBlock world.BlockData) {
 	p.mu.RLock()
 	pos := p.position
 	rot := p.rotation
 	p.mu.RUnlock()
 
 	// Calculate ray direction from rotation
-	pitchRad := float64(rot.X()) * math.Pi / 180.0
-	yawRad := float64(rot.Y()) * math.Pi / 180.0
+	pitchRad := float64(rot.X) * math.Pi / 180.0
+	yawRad := float64(rot.Y) * math.Pi / 180.0
 
-	dir := matrix.NewVec3(
+	dir := types.NewVec3(
 		float32(-math.Sin(yawRad)*math.Cos(pitchRad)),
 		float32(math.Sin(pitchRad)),
 		float32(-math.Cos(yawRad)*math.Cos(pitchRad)),
 	)
 
 	// Raycast from eye position (slightly above player feet)
-	eyePos := matrix.NewVec3(pos.X(), pos.Y()+1.6, pos.Z())
+	eyePos := types.NewVec3(pos.X, pos.Y+1.6, pos.Z)
 
 	// Simple voxel raycasting
 	step := float32(0.1)
 	for dist := float32(0); dist < maxDistance; dist += step {
-		checkPos := matrix.NewVec3(
-			eyePos.X()+dir.X()*dist,
-			eyePos.Y()+dir.Y()*dist,
-			eyePos.Z()+dir.Z()*dist,
+		checkPos := types.NewVec3(
+			eyePos.X+dir.X*dist,
+			eyePos.Y+dir.Y*dist,
+			eyePos.Z+dir.Z*dist,
 		)
 
-		blockX := int(math.Floor(float64(checkPos.X())))
-		blockY := int(math.Floor(float64(checkPos.Y())))
-		blockZ := int(math.Floor(float64(checkPos.Z())))
+		blockX := int(math.Floor(float64(checkPos.X)))
+		blockY := int(math.Floor(float64(checkPos.Y)))
+		blockZ := int(math.Floor(float64(checkPos.Z)))
 
 		block := p.worldRef.GetBlock(blockX, blockY, blockZ)
 		if !block.IsAir() {
-			// Calculate hit normal
+			// Calculate hit normal (simplified - just use the direction)
 			hitPos = checkPos
-			return true, hitPos, dir.Normal(), block
+			return true, hitPos, dir, block
 		}
 	}
 
-	return false, matrix.NewVec3(0, 0, 0), matrix.NewVec3(0, 0, 0), world.BlockData{}
+	return false, types.NewVec3(0, 0, 0), types.NewVec3(0, 0, 0), world.BlockData{}
 }
 
 // PlaceBlock places a block from the hotbar at the targeted position
@@ -396,9 +374,14 @@ func (p *Player) PlaceBlock() bool {
 	}
 
 	// Calculate placement position (adjacent to hit face)
-	placeX := int(math.Floor(float64(hitPos.X() + hitNormal.X()*0.1)))
-	placeY := int(math.Floor(float64(hitPos.Y() + hitNormal.Y()*0.1)))
-	placeZ := int(math.Floor(float64(hitPos.Z() + hitNormal.Z()*0.1)))
+	placePos := types.NewVec3(
+		hitPos.X+hitNormal.X*0.1,
+		hitPos.Y+hitNormal.Y*0.1,
+		hitPos.Z+hitNormal.Z*0.1,
+	)
+	placeX := int(math.Floor(float64(placePos.X)))
+	placeY := int(math.Floor(float64(placePos.Y)))
+	placeZ := int(math.Floor(float64(placePos.Z)))
 
 	// Get block from hotbar slot
 	p.mu.RLock()
@@ -421,9 +404,9 @@ func (p *Player) PlaceBlock() bool {
 
 	// Check if position is occupied by player
 	playerPos := p.position
-	playerBlockX := int(math.Floor(float64(playerPos.X())))
-	playerBlockY := int(math.Floor(float64(playerPos.Y())))
-	playerBlockZ := int(math.Floor(float64(playerPos.Z())))
+	playerBlockX := int(math.Floor(float64(playerPos.X)))
+	playerBlockY := int(math.Floor(float64(playerPos.Y)))
+	playerBlockZ := int(math.Floor(float64(playerPos.Z)))
 
 	// Don't place block inside player
 	if placeX == playerBlockX && placeZ == playerBlockZ {
@@ -454,9 +437,9 @@ func (p *Player) BreakBlock() bool {
 		return false
 	}
 
-	blockX := int(math.Floor(float64(hitPos.X())))
-	blockY := int(math.Floor(float64(hitPos.Y())))
-	blockZ := int(math.Floor(float64(hitPos.Z())))
+	blockX := int(math.Floor(float64(hitPos.X)))
+	blockY := int(math.Floor(float64(hitPos.Y)))
+	blockZ := int(math.Floor(float64(hitPos.Z)))
 
 	// Get the item that drops from this block
 	itemID := crafting.BlockIDToItemID(uint16(hitBlock.ID))
@@ -490,20 +473,18 @@ func (p *Player) BreakBlock() bool {
 }
 
 // getBlockColor returns the color for particle effects
-func (p *Player) getBlockColor(id world.BlockID) matrix.Color {
+func (p *Player) getBlockColor(id world.BlockID) types.Color {
 	switch id {
 	case world.BlockIDStone:
-		return matrix.ColorGray()
-	case world.BlockIDDirt:
-		return matrix.NewColor(139.0/255.0, 90.0/255.0, 43.0/255.0, 1.0)
+		return types.ColorGray()
 	case world.BlockIDGrass:
-		return matrix.NewColor(124.0/255.0, 200.0/255.0, 50.0/255.0, 1.0)
+		return types.NewColor(124, 200, 50, 255)
 	case world.BlockIDWood:
-		return matrix.NewColor(139.0/255.0, 90.0/255.0, 43.0/255.0, 1.0)
+		return types.NewColor(139, 90, 43, 255)
 	case world.BlockIDGlass:
-		return matrix.NewColor(200.0/255.0, 200.0/255.0, 255.0/255.0, 0.6)
+		return types.NewColor(200, 200, 255, 153)
 	default:
-		return matrix.ColorWhite()
+		return types.ColorWhite()
 	}
 }
 
@@ -519,8 +500,11 @@ func (p *Player) UpdateFootsteps() {
 		return
 	}
 
-	// Check if moved enough distance
-	dist := p.position.Distance(p.lastPosition)
+	// Check if moved enough distance (simplified distance calculation)
+	dx := p.position.X - p.lastPosition.X
+	dy := p.position.Y - p.lastPosition.Y
+	dz := p.position.Z - p.lastPosition.Z
+	dist := float32(math.Sqrt(float64(dx*dx + dy*dy + dz*dz)))
 	if dist < 0.5 {
 		return
 	}
@@ -532,8 +516,8 @@ func (p *Player) UpdateFootsteps() {
 
 	// Spawn footstep particles
 	if p.effectManager != nil {
-		footPos := matrix.NewVec3(p.position.X(), p.position.Y(), p.position.Z())
-		p.effectManager.SpawnBlockBreak(footPos, matrix.NewColor(0.6, 0.5, 0.4, 0.5))
+		footPos := types.NewVec3(p.position.X, p.position.Y, p.position.Z)
+		p.effectManager.SpawnBlockBreak(footPos, types.NewColor(153, 128, 102, 128))
 	}
 
 	p.lastFootstepTime = time.Now()
@@ -541,34 +525,34 @@ func (p *Player) UpdateFootsteps() {
 }
 
 // resolveCollisions resolves collisions between player and world
-func (p *Player) resolveCollisions(newPos matrix.Vec3) matrix.Vec3 {
+func (p *Player) resolveCollisions(newPos types.Vec3) types.Vec3 {
 	// Simple AABB collision resolution
 	playerWidth := float32(0.6)
 	playerHeight := float32(1.8)
 
 	// Check horizontal collisions
-	x := newPos.X()
-	y := newPos.Y()
-	z := newPos.Z()
+	x := newPos.X
+	y := newPos.Y
+	z := newPos.Z
 
 	// Check X collision
-	if p.checkCollision(x-playerWidth/2, p.position.Y(), p.position.Z(), playerWidth, playerHeight) ||
-		p.checkCollision(x+playerWidth/2, p.position.Y(), p.position.Z(), playerWidth, playerHeight) {
-		x = p.position.X()
-		p.velocity.SetX(0)
+	if p.checkCollision(x-playerWidth/2, p.position.Y, p.position.Z, playerWidth, playerHeight) ||
+		p.checkCollision(x+playerWidth/2, p.position.Y, p.position.Z, playerWidth, playerHeight) {
+		x = p.position.X
+		p.velocity.X = 0
 	}
 
 	// Check Z collision
-	if p.checkCollision(x, p.position.Y(), z-playerWidth/2, playerWidth, playerHeight) ||
-		p.checkCollision(x, p.position.Y(), z+playerWidth/2, playerWidth, playerHeight) {
-		z = p.position.Z()
-		p.velocity.SetZ(0)
+	if p.checkCollision(x, p.position.Y, z-playerWidth/2, playerWidth, playerHeight) ||
+		p.checkCollision(x, p.position.Y, z+playerWidth/2, playerWidth, playerHeight) {
+		z = p.position.Z
+		p.velocity.Z = 0
 	}
 
 	// Check Y collision
 	if p.checkCollision(x, y, z, playerWidth, playerHeight) {
 		// Check if falling or jumping
-		if p.velocity.Y() < 0 {
+		if p.velocity.Y < 0 {
 			// Hit ground
 			for p.checkCollision(x, y, z, playerWidth, playerHeight) && y < 300 {
 				y += 0.1
@@ -582,7 +566,7 @@ func (p *Player) resolveCollisions(newPos matrix.Vec3) matrix.Vec3 {
 		p.velocity.SetY(0)
 	}
 
-	return matrix.NewVec3(x, y, z)
+	return types.NewVec3(x, y, z)
 }
 
 // checkCollision checks if the player AABB intersects with any solid blocks
@@ -610,9 +594,9 @@ func (p *Player) checkCollision(x, y, z float32, width, height float32) bool {
 
 // checkOnGround checks if the player is standing on solid ground
 func (p *Player) checkOnGround() bool {
-	x := p.position.X()
-	y := p.position.Y()
-	z := p.position.Z()
+	x := p.position.X
+	y := p.position.Y
+	z := p.position.Z
 	width := float32(0.6)
 
 	// Check if there's solid ground 0.1 blocks below
@@ -648,11 +632,11 @@ func (p *Player) Respawn() {
 	defer p.mu.Unlock()
 
 	spawn := p.worldRef.GetSpawnPoint()
-	safeY := p.worldRef.GetSafeSpawnHeight(int(spawn.X()), int(spawn.Z()))
+	safeY := p.worldRef.GetSafeSpawnHeight(int(spawn.X), int(spawn.Z))
 
-	p.position = matrix.NewVec3(spawn.X(), float32(safeY), spawn.Z())
-	p.velocity = matrix.NewVec3(0, 0, 0)
-	p.rotation = matrix.NewVec3(0, 0, 0)
+	p.position = types.NewVec3(spawn.X, float32(safeY), spawn.Z)
+	p.velocity = types.NewVec3(0, 0, 0)
+	p.rotation = types.NewVec3(0, 0, 0)
 	p.onGround = false
 
 	// Reset stats

@@ -1,6 +1,6 @@
 # TesselBox
 
-A voxel-based sandbox game built with Go and the Kaiju Engine. Explore, build, and survive in a block-based world.
+A voxel-based sandbox game built with Go and pure OpenGL. Explore, build, and survive in a block-based world.
 
 ![Go Version](https://img.shields.io/badge/go-1.25+-blue.svg?url=https://github.com/tesselstudio/TesselBox)
 ![License](https://img.shields.io/badge/license-MIT-green.svg?url=https://github.com/tesselstudio/TesselBox)
@@ -9,7 +9,7 @@ A voxel-based sandbox game built with Go and the Kaiju Engine. Explore, build, a
 ![GitHub Pull Request](https://img.shields.io/github/issues-pr/tesselstudio/TesselBox.svg?url=https://github.com/tesselstudio/TesselBox)
 ![GitHub Contributors](https://img.shields.io/github/contributors/tesselstudio/TesselBox.svg?url=https://github.com/tesselstudio/TesselBox)
 ![GitHub Last Commit](https://img.shields.io/github/last-commit/tesselstudio/TesselBox.svg?url=https://github.com/tesselstudio/TesselBox)
-![Kaiju Engine](https://img.shields.io/badge/Kaiju-Engine-blue.svg?url=https://github.com/tesselstudio/TesselBox)
+![OpenGL](https://img.shields.io/badge/OpenGL-3.3+-blue.svg?url=https://github.com/tesselstudio/TesselBox)
 ![GitHub Repo Size](https://img.shields.io/github/repo-size/tesselstudio/TesselBox.svg?url=https://github.com/tesselstudio/TesselBox)
 
 
@@ -23,8 +23,8 @@ TesselBox requires the following to run:
 <details>
 <summary>Linux</summary>
 
-- **OS**: Ubuntu 20.04+ or any other Linux distribution that supports Vulkan
-- **Graphics**: Vulkan-compatible GPU
+- **OS**: Ubuntu 20.04+ or any other Linux distribution
+- **Graphics**: OpenGL 3.3+ compatible GPU
 - **RAM**: 4GB minimum, 8GB recommended
 - **Storage**: 500MB
 
@@ -34,7 +34,7 @@ TesselBox requires the following to run:
 <summary>Windows</summary>
 
 - **OS**: Windows 10+
-- **Graphics**: Vulkan-compatible GPU
+- **Graphics**: OpenGL 3.3+ compatible GPU
 - **RAM**: 4GB minimum, 8GB recommended
 - **Storage**: 500MB
 
@@ -44,7 +44,7 @@ TesselBox requires the following to run:
 <summary>macOS</summary>
 
 - **OS**: macOS 10.15+
-- **Graphics**: Vulkan-compatible GPU
+- **Graphics**: OpenGL 3.3+ compatible GPU
 - **RAM**: 4GB minimum, 8GB recommended
 - **Storage**: 500MB
 
@@ -109,21 +109,20 @@ TesselBox/
 │   ├── world/     # World generation & saving
 │   └── player/    # Player & inventory
 ├── game_content/  # Assets & UI files
-├── kaiju/         # Kaiju Engine submodule
 ├── scripts/       # Build scripts
 └── dist/          # Build outputs
 ```
 
 ## Architecture
 
-TesselBox is built on the [Kaiju Engine](https://github.com/KaijuEngine), providing:
+TesselBox is built with pure OpenGL and custom Go systems, providing:
 
 - Entity Component System (ECS)
-- UI/Markup system
+- Custom UI system with Fyne integration
 - Asset management
 - Input handling
-- Rendering pipeline
-- More details can be found in the [Kaiju Engine documentation](https://github.com/KaijuEngine)
+- OpenGL rendering pipeline
+- Custom world generation and physics systems
 
 
 ## Features
@@ -183,7 +182,7 @@ Report security issues privately - see [SECURITY.md](SECURITY.md).
 
 ## History
 
-TesselBox is a game built on the Kaiju Engine. The project began in October 2021 as a side project. The initial commit was made on October 25, 2021. The project has been actively developed since then with regular commits and major updates.
+TesselBox is a voxel-based sandbox game built with Go and pure OpenGL. The project began in October 2021 as a side project. The initial commit was made on October 25, 2021. The project has been actively developed since then with regular commits and major updates, including a complete migration from Kaiju Engine to pure OpenGL in 2026.
 
 ## Development
 
@@ -191,8 +190,8 @@ The development journey of TesselBox is ongoing. The project has undergone sever
 
 ## Credits
 
-Thanks to all the contributors and the Kaiju Engine team for their amazing work.
+Thanks to all the contributors who have helped make TesselBox possible.
 
 ---
 
-Built with Go and the Kaiju Engine.
+Built with Go and pure OpenGL.

@@ -15,8 +15,8 @@ type GitHubUser struct {
 
 // SimpleMenuManager manages Fyne UI only
 type SimpleMenuManager struct {
-	mu          sync.RWMutex
-	fyneBridge  *FyneKaijuBridge
+	mu sync.RWMutex
+	// fyneBridge will be replaced with pure OpenGL implementation
 	onStartGame func(worldName string, seed int64)
 	onQuitGame  func()
 }
@@ -26,11 +26,12 @@ func NewSimpleMenuManager() *SimpleMenuManager {
 	return &SimpleMenuManager{}
 }
 
-// SetFyneBridge sets the Fyne bridge
-func (sm *SimpleMenuManager) SetFyneBridge(bridge *FyneKaijuBridge) {
+// SetFyneBridge sets the Fyne bridge (placeholder for pure OpenGL implementation)
+func (sm *SimpleMenuManager) SetFyneBridge(bridge interface{}) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	sm.fyneBridge = bridge
+	// Fyne bridge will be replaced with pure OpenGL implementation
+	// For now, this is a placeholder
 }
 
 // SetOnStartGame sets the callback for starting a game
@@ -47,31 +48,29 @@ func (sm *SimpleMenuManager) SetOnQuitGame(callback func()) {
 	sm.onQuitGame = callback
 }
 
-// ShowLogin shows the Fyne login screen
+// ShowLogin shows the Fyne login screen (placeholder for pure OpenGL implementation)
 func (sm *SimpleMenuManager) ShowLogin() {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
-	if sm.fyneBridge != nil {
-		sm.fyneBridge.ShowFyneLogin()
-	}
+
+	// Fyne login will be implemented with pure OpenGL
+	// For now, this is a placeholder
 }
 
-// ShowGameSelect shows the Fyne game selection screen
+// ShowGameSelect shows the Fyne game selection screen (placeholder for pure OpenGL implementation)
 func (sm *SimpleMenuManager) ShowGameSelect() {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
-	if sm.fyneBridge != nil {
-		sm.fyneBridge.ShowFyneGameSelect()
-	}
+
+	// Fyne game selection will be implemented with pure OpenGL
+	// For now, this is a placeholder
 }
 
 // HandleGameMode handles game mode selection
 func (sm *SimpleMenuManager) HandleGameMode(mode string) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
+
 	switch mode {
 	case "singleplayer":
 		if sm.onStartGame != nil {

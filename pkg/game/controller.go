@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"math"
 	"sync"
 	"time"
 
@@ -10,14 +9,8 @@ import (
 	"github.com/tesselstudio/TesselBox/pkg/effects"
 	"github.com/tesselstudio/TesselBox/pkg/network"
 	"github.com/tesselstudio/TesselBox/pkg/player"
-	"github.com/tesselstudio/TesselBox/pkg/ui"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 	"github.com/tesselstudio/TesselBox/pkg/world"
-	"kaijuengine.com/engine"
-	"kaijuengine.com/engine/assets"
-	"kaijuengine.com/matrix"
-	"kaijuengine.com/platform/hid"
-	"kaijuengine.com/registry/shader_data_registry"
-	"kaijuengine.com/rendering"
 )
 
 // AutoSaveInterval is the time between automatic saves
@@ -41,12 +34,9 @@ const (
 	GameStateSettings
 )
 
-// Controller manages the game state and integrates all systems
+// Controller manages the game state and logic
 type Controller struct {
 	mu sync.RWMutex
-
-	// Engine reference
-	host *engine.Host
 
 	// World
 	world *world.World
@@ -57,8 +47,8 @@ type Controller struct {
 	// Game state
 	state GameState
 
-	// UI
-	hud *ui.HUD
+	// UI (placeholder for pure OpenGL implementation)
+	// hud interface will be implemented with pure OpenGL
 
 	// Input state
 	input *InputState
@@ -109,16 +99,14 @@ type InputState struct {
 	MouseDY float32
 }
 
-// ChunkRenderer handles rendering of a chunk
+// ChunkRenderer handles rendering of a chunk (placeholder for pure OpenGL implementation)
 type ChunkRenderer struct {
-	drawing *rendering.Drawing
-	mesh    *world.ChunkMesh
+	mesh *world.ChunkMesh
 }
 
 // NewController creates a new game controller
-func NewController(host *engine.Host) *Controller {
+func NewController() *Controller {
 	return &Controller{
-		host:             host,
 		state:            GameStateLogin,
 		input:            &InputState{},
 		chunkRenderers:   make(map[world.ChunkCoord]*ChunkRenderer),
@@ -151,7 +139,8 @@ func (c *Controller) StartWorld(worldName string, seed int64) {
 			if info, err := saveManager.LoadWorldInfo(); err == nil {
 				c.world.Seed = info.Seed
 				c.world.SetTimeOfDay(info.GameTime)
-				c.world.SetSpawnPoint(matrix.NewVec3(info.SpawnX, info.SpawnY, info.SpawnZ))
+				spawn := world.Vec3{X: info.SpawnX, Y: info.SpawnY, Z: info.SpawnZ}
+				c.world.SetSpawnPoint(spawn)
 			}
 		} else {
 			// Save initial world info for new world
@@ -160,8 +149,11 @@ func (c *Controller) StartWorld(worldName string, seed int64) {
 		}
 	}
 
+	// Create effect manager
+	c.effectManager = effects.NewEffectManager()
+
 	// Create player
-	c.player = player.NewPlayer(c.host, c.world)
+	c.player = player.NewPlayer(c.world)
 
 	// Load player data if it exists
 	if worldExists {
@@ -169,23 +161,23 @@ func (c *Controller) StartWorld(worldName string, seed int64) {
 			fmt.Printf("Warning: failed to load player data: %v\n", err)
 			// Fall back to spawn point
 			spawn := c.world.GetSpawnPoint()
-			safeY := c.world.GetSafeSpawnHeight(int(spawn.X()), int(spawn.Z()))
-			c.player.SetPosition(matrix.NewVec3(spawn.X(), float32(safeY), spawn.Z()))
+			safeY := c.world.GetSafeSpawnHeight(int(spawn.X), int(spawn.Z))
+			playerPos := types.NewVec3(spawn.X, float32(safeY), spawn.Z)
+			c.player.SetPosition(playerPos)
 		}
 	} else {
 		// Set initial position to safe spawn height for new world
 		spawn := c.world.GetSpawnPoint()
-		safeY := c.world.GetSafeSpawnHeight(int(spawn.X()), int(spawn.Z()))
-		c.player.SetPosition(matrix.NewVec3(spawn.X(), float32(safeY), spawn.Z()))
+		safeY := c.world.GetSafeSpawnHeight(int(spawn.X), int(spawn.Z))
+		playerPos := types.NewVec3(spawn.X, float32(safeY), spawn.Z)
+		c.player.SetPosition(playerPos)
 	}
 
-	// Create HUD
-	c.hud = ui.NewHUD(1920, 1080)
-	c.hud.SetPlayerStats(c.player.GetStats())
-	c.hud.SetInventory(c.player.GetInventory())
+	// HUD will be implemented with pure OpenGL
+	// For now, this is a placeholder
 
 	// Initialize effects and audio
-	c.effectManager = effects.NewEffectManager(c.host)
+	c.effectManager = effects.NewEffectManager()
 	c.player.SetEffectManager(c.effectManager)
 	c.audioManager = audio.GetManager()
 	if err := c.audioManager.Initialize(); err != nil {
@@ -202,73 +194,36 @@ func (c *Controller) StartWorld(worldName string, seed int64) {
 	c.state = GameStatePlaying
 
 	// Setup input
-	c.setupInput()
+	fmt.Println("Input system initialized (placeholder)")
 }
 
 // setupInput configures input handlers
 func (c *Controller) setupInput() {
-	// Keyboard input
-	c.host.Window.Keyboard.AddKeyCallback(func(keyId int, keyState hid.KeyState) {
-		c.handleKeyInput(keyId, keyState)
-	})
-
-	// Input is polled in Update() rather than using callbacks
+	// Input handling will be implemented with pure OpenGL/Fyne
+	// For now, this is a placeholder
 }
 
-// handleKeyInput handles keyboard input
-func (c *Controller) handleKeyInput(keyId int, keyState hid.KeyState) {
+// handleKeyInput handles keyboard input (placeholder for pure OpenGL implementation)
+func (c *Controller) handleKeyInput(keyId int, keyState int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	pressed := keyState == hid.KeyStateDown
+	pressed := keyState == 1 // Simplified key state
 
+	// Basic input handling (simplified for pure OpenGL)
 	switch keyId {
-	case hid.KeyboardKeyW:
+	case 87: // W key
 		c.input.Forward = pressed
-	case hid.KeyboardKeyS:
+	case 83: // S key
 		c.input.Backward = pressed
-	case hid.KeyboardKeyA:
+	case 65: // A key
 		c.input.Left = pressed
-	case hid.KeyboardKeyD:
+	case 68: // D key
 		c.input.Right = pressed
-	case hid.KeyboardKeySpace:
+	case 32: // Space key
 		c.input.Jump = pressed
 		if pressed && c.state == GameStatePlaying {
 			c.player.Jump()
-		}
-	case hid.KeyboardKeyLeftShift, hid.KeyboardKeyRightShift:
-		c.input.Sprint = pressed
-	case hid.KeyboardKeyLeftCtrl, hid.KeyboardKeyRightCtrl:
-		c.input.Sneak = pressed
-		c.player.SetSneaking(pressed)
-	case hid.KeyboardKeyE:
-		if pressed {
-			c.toggleInventory()
-		}
-	case hid.KeyboardKeyEscape:
-		if pressed {
-			c.togglePause()
-		}
-	case hid.KeyboardKeyF3:
-		if pressed {
-			c.input.Debug = !c.input.Debug
-			if c.hud != nil {
-				c.hud.ToggleDebug()
-			}
-		}
-	case hid.KeyboardKeyF5:
-		if pressed {
-			// Quick save
-			c.saveGame()
-		}
-	}
-
-	// Hotbar keys (1-9)
-	if keyId >= hid.KeyboardKey1 && keyId <= hid.KeyboardKey9 {
-		slot := keyId - hid.KeyboardKey1
-		c.player.SetHotbarSlot(slot)
-		if c.hud != nil {
-			c.hud.GetHotbar().SelectSlot(slot)
 		}
 	}
 }
@@ -294,45 +249,32 @@ func (c *Controller) handleMouseMove(x, y float32) {
 	}
 
 	// Update player rotation
-	c.player.SetRotation(matrix.NewVec3(c.cameraPitch, c.cameraYaw, 0))
+	c.player.SetRotation(types.NewVec3(c.cameraPitch, c.cameraYaw, 0))
 }
 
-// handleMouseButton handles mouse button input
-func (c *Controller) handleMouseButton(buttonId int, buttonState int) {
-	if c.state != GameStatePlaying {
-		return
-	}
-
+// handleMouseInput handles mouse button input (placeholder for pure OpenGL implementation)
+func (c *Controller) handleMouseInput(buttonId int, buttonState int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	pressed := buttonState == hid.MousePress
+	pressed := buttonState == 1 // Simplified button state
 
 	switch buttonId {
-	case hid.MouseButtonLeft:
+	case 0: // Left mouse button
 		c.input.Attack = pressed
-	case hid.MouseButtonRight:
+	case 1: // Right mouse button
 		c.input.Use = pressed
 	}
 }
 
-// pollMouseInput polls mouse state for clicks
+// pollMouseInput polls mouse state for clicks (placeholder for pure OpenGL implementation)
 func (c *Controller) pollMouseInput() {
 	if c.state != GameStatePlaying {
 		return
 	}
 
-	mouse := c.host.Window.Mouse
-
-	// Left click - break block
-	if mouse.Pressed(hid.MouseButtonLeft) {
-		c.player.BreakBlock()
-	}
-
-	// Right click - place block
-	if mouse.Pressed(hid.MouseButtonRight) {
-		c.player.PlaceBlock()
-	}
+	// Mouse input will be implemented with pure OpenGL
+	// For now, this is a placeholder
 }
 
 // toggleInventory toggles inventory screen
@@ -428,12 +370,11 @@ func (c *Controller) Update() {
 
 		// Update world around player
 		playerPos := c.player.GetPosition()
-		c.world.Update(deltaTime, playerPos)
+		worldPos := world.Vec3{X: playerPos.X, Y: playerPos.Y, Z: playerPos.Z}
+		c.world.Update(deltaTime, worldPos)
 
-		// Update HUD
-		if c.hud != nil {
-			c.hud.Update(float32(deltaTime))
-		}
+		// HUD updates will be implemented with pure OpenGL
+		// For now, this is a placeholder
 
 		// Update camera to follow player
 		c.updateCamera(playerPos)
@@ -504,32 +445,10 @@ func (c *Controller) autoSave() {
 	fmt.Printf("Auto-saved world: %s\n", c.world.Name)
 }
 
-// updateCamera updates the camera position
-func (c *Controller) updateCamera(playerPos matrix.Vec3) {
-	// Camera follows player at eye level
-	eyeHeight := float32(1.6)
-	cameraPos := matrix.NewVec3(playerPos.X(), playerPos.Y()+eyeHeight, playerPos.Z())
-
-	// Update engine camera
-	c.host.Cameras.Primary.Camera.SetPosition(cameraPos)
-
-	// Calculate forward direction from rotation
-	pitchRad := float64(c.cameraPitch) * math.Pi / 180.0
-	yawRad := float64(c.cameraYaw) * math.Pi / 180.0
-
-	forward := matrix.NewVec3(
-		float32(-math.Sin(yawRad)*math.Cos(pitchRad)),
-		float32(math.Sin(pitchRad)),
-		float32(-math.Cos(yawRad)*math.Cos(pitchRad)),
-	)
-
-	// Set camera look target
-	lookTarget := matrix.NewVec3(
-		cameraPos.X()+forward.X(),
-		cameraPos.Y()+forward.Y(),
-		cameraPos.Z()+forward.Z(),
-	)
-	c.host.Cameras.Primary.Camera.SetLookAt(lookTarget)
+// updateCamera updates the camera position (placeholder for pure OpenGL implementation)
+func (c *Controller) updateCamera(playerPos types.Vec3) {
+	// Camera updates will be implemented with pure OpenGL
+	// For now, this is a placeholder
 }
 
 // renderChunks renders all visible chunks
@@ -546,133 +465,46 @@ func (c *Controller) renderChunks() {
 		}
 
 		// Render chunk
-		renderer, exists := c.chunkRenderers[coord]
-		if exists && renderer.drawing != nil {
-			// Drawing is already registered with the host
+		_, exists := c.chunkRenderers[coord]
+		if exists {
+			// Chunk rendering will be implemented with pure OpenGL
 		}
 	}
 }
 
-// updateChunkRenderer creates or updates a chunk renderer with Kaiju Engine integration
+// updateChunkRenderer creates or updates a chunk renderer (placeholder for pure OpenGL implementation)
 func (c *Controller) updateChunkRenderer(coord world.ChunkCoord, mesh *world.ChunkMesh) {
 	renderer, exists := c.chunkRenderers[coord]
 	if !exists {
-		// Create new renderer with Kaiju Engine drawing
+		// Create new renderer
 		renderer = &ChunkRenderer{}
 		c.chunkRenderers[coord] = renderer
-
-		// Create Kaiju Engine drawing for this chunk
-		if len(mesh.Vertices) > 0 {
-			drawing := c.createChunkDrawing(coord, mesh)
-			renderer.drawing = drawing
-		}
-	} else {
-		// Update existing renderer
-		// Remove old drawing if exists
-		if renderer.drawing != nil {
-			// Drawing will be garbage collected when no longer referenced
-			renderer.drawing = nil
-		}
-
-		// Create new drawing with updated mesh
-		if len(mesh.Vertices) > 0 {
-			drawing := c.createChunkDrawing(coord, mesh)
-			renderer.drawing = drawing
-		}
 	}
+
+	// Update mesh data
+	renderer.mesh = mesh
 }
 
-// createChunkDrawing creates a Kaiju Engine Drawing from chunk mesh data
-func (c *Controller) createChunkDrawing(coord world.ChunkCoord, mesh *world.ChunkMesh) *rendering.Drawing {
+// createChunkDrawing creates a chunk rendering (placeholder for pure OpenGL implementation)
+func (c *Controller) createChunkDrawing(coord world.ChunkCoord, mesh *world.ChunkMesh) interface{} {
 	if len(mesh.Vertices) == 0 || len(mesh.Indices) == 0 {
 		return nil
 	}
 
-	// Create entity for this chunk
-	entity := engine.NewEntity(c.host.WorkGroup())
-
-	// Position entity at chunk origin
-	chunkWorldX := float32(coord.X * world.ChunkSize)
-	chunkWorldZ := float32(coord.Z * world.ChunkSize)
-	entity.Transform.SetPosition(matrix.NewVec3(chunkWorldX, 0, chunkWorldZ))
-
-	// Create the mesh
-	kaijuMesh := c.createKaijuMesh(mesh)
-	if kaijuMesh == nil {
-		return nil
-	}
-
-	// Create shader data (basic shader with color support)
-	sd := shader_data_registry.Create("basic")
-	if sd != nil {
-		if basic, ok := sd.(*shader_data_registry.ShaderDataStandard); ok {
-			basic.Color = matrix.ColorWhite()
-		}
-	}
-
-	// Get basic material
-	mat, err := c.host.MaterialCache().Material(assets.MaterialDefinitionBasic)
-	if err != nil {
-		// Fallback: create without material
-		return nil
-	}
-
-	// Create texture (white square for now)
-	tex, err := c.host.TextureCache().Texture(assets.TextureSquare, rendering.TextureFilterLinear)
-	if err != nil {
-		tex = nil
-	}
-
-	// Create the drawing
-	draw := &rendering.Drawing{
-		Material:   mat.CreateInstance([]*rendering.Texture{tex}),
-		Mesh:       kaijuMesh,
-		ShaderData: sd,
-		Transform:  &entity.Transform,
-		ViewCuller: &c.host.Cameras.Primary,
-	}
-
-	// Add to host drawings
-	c.host.Drawings.AddDrawing(*draw)
-
-	return draw
+	// Chunk rendering will be implemented with pure OpenGL
+	// For now, this is a placeholder
+	return nil
 }
 
-// createKaijuMesh converts world.ChunkMesh to Kaiju Engine mesh format
-func (c *Controller) createKaijuMesh(mesh *world.ChunkMesh) *rendering.Mesh {
+// createKaijuMesh converts world.ChunkMesh to mesh format (placeholder for pure OpenGL implementation)
+func (c *Controller) createKaijuMesh(mesh *world.ChunkMesh) interface{} {
 	if len(mesh.Vertices) == 0 || len(mesh.Indices) == 0 {
 		return nil
 	}
 
-	// Convert to Kaiju Vertex format
-	verts := make([]rendering.Vertex, len(mesh.Vertices))
-	for i := range mesh.Vertices {
-		verts[i].Position = mesh.Vertices[i]
-		if len(mesh.Normals) > i {
-			verts[i].Normal = mesh.Normals[i]
-		} else {
-			verts[i].Normal = matrix.NewVec3(0, 1, 0)
-		}
-		if len(mesh.UVs) > i {
-			verts[i].UV0 = mesh.UVs[i]
-		} else {
-			verts[i].UV0 = matrix.NewVec2(0, 0)
-		}
-		if len(mesh.Colors) > i {
-			verts[i].Color = mesh.Colors[i]
-		} else {
-			verts[i].Color = matrix.ColorWhite()
-		}
-		// Set default tangent
-		verts[i].Tangent = matrix.NewVec4(1, 0, 0, 1)
-	}
-
-	// Create unique key for this chunk mesh
-	key := fmt.Sprintf("chunk_%d_%d", len(mesh.Vertices), len(mesh.Indices))
-
-	// Create Kaiju mesh
-	kaijuMesh := rendering.NewMesh(key, verts, mesh.Indices)
-	return kaijuMesh
+	// Mesh creation will be implemented with pure OpenGL
+	// For now, this is a placeholder
+	return nil
 }
 
 // GetState returns the current game state
@@ -696,11 +528,12 @@ func (c *Controller) GetPlayer() *player.Player {
 	return c.player
 }
 
-// GetHUD returns the HUD
-func (c *Controller) GetHUD() *ui.HUD {
+// GetHUD returns the HUD interface (placeholder for pure OpenGL implementation)
+func (c *Controller) GetHUD() interface{} {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.hud
+	// HUD will be implemented with pure OpenGL
+	return nil
 }
 
 // IsPlaying returns true if game is in playing state
@@ -849,11 +682,11 @@ func (c *Controller) ConnectToServer(address, playerName string) error {
 	c.isMultiplayer = true
 
 	// Create network manager
-	c.networkManager = network.NewManager(c.host)
+	c.networkManager = network.NewManager()
 	c.networkManager.SetCallback(c)
 
 	// Create remote player manager
-	c.remotePlayerManager = player.NewRemotePlayerManager(c.host)
+	c.remotePlayerManager = player.NewRemotePlayerManager()
 
 	// Connect
 	return c.networkManager.Connect(address, playerName)
@@ -867,11 +700,11 @@ func (c *Controller) HostServer(port int, playerName string) error {
 	c.isMultiplayer = true
 
 	// Create network manager
-	c.networkManager = network.NewManager(c.host)
+	c.networkManager = network.NewManager()
 	c.networkManager.SetCallback(c)
 
 	// Create remote player manager
-	c.remotePlayerManager = player.NewRemotePlayerManager(c.host)
+	c.remotePlayerManager = player.NewRemotePlayerManager()
 
 	// Host and connect
 	return c.networkManager.HostServer(port, playerName)
@@ -907,7 +740,7 @@ func (c *Controller) IsMultiplayer() bool {
 }
 
 // SendBlockPlace sends a block placement to the server
-func (c *Controller) SendBlockPlace(blockType uint8, position matrix.Vec3, rotation int) {
+func (c *Controller) SendBlockPlace(blockType uint8, position types.Vec3, rotation int) {
 	c.mu.RLock()
 	mgr := c.networkManager
 	c.mu.RUnlock()
@@ -918,7 +751,7 @@ func (c *Controller) SendBlockPlace(blockType uint8, position matrix.Vec3, rotat
 }
 
 // SendBlockBreak sends a block break to the server
-func (c *Controller) SendBlockBreak(position matrix.Vec3) {
+func (c *Controller) SendBlockBreak(position types.Vec3) {
 	c.mu.RLock()
 	mgr := c.networkManager
 	c.mu.RUnlock()
@@ -931,7 +764,7 @@ func (c *Controller) SendBlockBreak(position matrix.Vec3) {
 // NetworkCallback implementations
 
 // OnPlayerJoin handles a player joining the game
-func (c *Controller) OnPlayerJoin(playerID uint32, name string, position matrix.Vec3) {
+func (c *Controller) OnPlayerJoin(playerID uint32, name string, position types.Vec3) {
 	fmt.Printf("Player joined: %s (ID: %d)\n", name, playerID)
 
 	c.mu.Lock()
@@ -957,7 +790,7 @@ func (c *Controller) OnPlayerLeave(playerID uint32) {
 }
 
 // OnPlayerMove handles a player movement update
-func (c *Controller) OnPlayerMove(playerID uint32, position, rotation matrix.Vec3) {
+func (c *Controller) OnPlayerMove(playerID uint32, position, rotation types.Vec3) {
 	c.mu.RLock()
 	rpm := c.remotePlayerManager
 	c.mu.RUnlock()
@@ -971,31 +804,31 @@ func (c *Controller) OnPlayerMove(playerID uint32, position, rotation matrix.Vec
 }
 
 // OnBlockPlace handles a remote block placement
-func (c *Controller) OnBlockPlace(playerID uint32, blockType uint8, position matrix.Vec3) {
+func (c *Controller) OnBlockPlace(playerID uint32, blockType uint8, position types.Vec3) {
 	c.mu.RLock()
 	w := c.world
 	c.mu.RUnlock()
 
 	if w != nil {
 		// Place the block in our world
-		x := int(position.X())
-		y := int(position.Y())
-		z := int(position.Z())
+		x := int(position.X)
+		y := int(position.Y)
+		z := int(position.Z)
 		w.SetBlock(x, y, z, world.BlockData{ID: world.BlockID(blockType)})
 	}
 }
 
 // OnBlockBreak handles a remote block break
-func (c *Controller) OnBlockBreak(playerID uint32, position matrix.Vec3) {
+func (c *Controller) OnBlockBreak(playerID uint32, position types.Vec3) {
 	c.mu.RLock()
 	w := c.world
 	c.mu.RUnlock()
 
 	if w != nil {
 		// Break the block (set to air)
-		x := int(position.X())
-		y := int(position.Y())
-		z := int(position.Z())
+		x := int(position.X)
+		y := int(position.Y)
+		z := int(position.Z)
 		w.SetBlock(x, y, z, world.BlockData{ID: world.BlockID(0)})
 	}
 }

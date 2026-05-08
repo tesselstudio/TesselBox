@@ -2,7 +2,7 @@ package world
 
 import (
 	"github.com/tesselstudio/TesselBox/pkg/blocks"
-	"kaijuengine.com/matrix"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
 // ChunkMeshBuilder generates meshes for chunks
@@ -19,11 +19,11 @@ func NewChunkMeshBuilder(chunk *Chunk) *ChunkMeshBuilder {
 
 // BuildMesh generates a mesh for the entire chunk
 func (b *ChunkMeshBuilder) BuildMesh() *ChunkMesh {
-	vertices := make([]matrix.Vec3, 0)
+	vertices := make([]types.Vec3, 0)
 	indices := make([]uint32, 0)
-	normals := make([]matrix.Vec3, 0)
-	uvs := make([]matrix.Vec2, 0)
-	colors := make([]matrix.Color, 0)
+	normals := make([]types.Vec3, 0)
+	uvs := make([]types.Vec2, 0)
+	colors := make([]types.Color, 0)
 
 	indexOffset := uint32(0)
 
@@ -53,7 +53,7 @@ func (b *ChunkMeshBuilder) BuildMesh() *ChunkMesh {
 
 				// Generate mesh for this block
 				prism := blocks.NewHexPrism(
-					matrix.NewVec3(worldX, worldY, worldZ),
+					types.NewVec3(worldX, worldY, worldZ),
 					0.5, // radius
 					1.0, // height
 				)
@@ -126,31 +126,31 @@ func (b *ChunkMeshBuilder) isBlockVisible(x, y, z int) bool {
 }
 
 // getBlockColor returns the color for a block type
-func (b *ChunkMeshBuilder) getBlockColor(id BlockID) matrix.Color {
+func (b *ChunkMeshBuilder) getBlockColor(id BlockID) types.Color {
 	switch id {
 	case BlockIDStone:
-		return matrix.ColorGray()
+		return types.ColorGray()
 	case BlockIDDirt:
-		return matrix.NewColor(139.0/255.0, 90.0/255.0, 43.0/255.0, 1.0)
+		return types.NewColor(139, 90, 43, 255)
 	case BlockIDGrass:
-		return matrix.NewColor(124.0/255.0, 200.0/255.0, 50.0/255.0, 1.0)
+		return types.NewColor(124, 252, 0, 255)
 	case BlockIDWood:
-		return matrix.NewColor(139.0/255.0, 90.0/255.0, 43.0/255.0, 1.0)
+		return types.NewColor(139, 69, 19, 255)
 	case BlockIDGlass:
-		return matrix.NewColor(200.0/255.0, 200.0/255.0, 255.0/255.0, 0.6)
+		return types.NewColor(200, 200, 255, 128)
 	case BlockIDWater:
-		return matrix.NewColor(64.0/255.0, 164.0/255.0, 223.0/255.0, 0.8)
+		return types.NewColor(64, 164, 223, 180)
 	default:
-		return matrix.ColorWhite()
+		return types.ColorWhite()
 	}
 }
 
 // BuildSimpleMesh creates a simpler mesh without full hexagonal prisms
 // Useful for debugging or when performance is critical
 func (b *ChunkMeshBuilder) BuildSimpleMesh() *ChunkMesh {
-	vertices := make([]matrix.Vec3, 0)
+	vertices := make([]types.Vec3, 0)
 	indices := make([]uint32, 0)
-	colors := make([]matrix.Color, 0)
+	colors := make([]types.Color, 0)
 
 	indexOffset := uint32(0)
 
@@ -175,37 +175,37 @@ func (b *ChunkMeshBuilder) BuildSimpleMesh() *ChunkMesh {
 				color := b.getBlockColor(block.ID)
 
 				// Simple cube vertices
-				blockVerts := []matrix.Vec3{
+				blockVerts := []types.Vec3{
 					// Front face
-					matrix.NewVec3(worldX-0.5, worldY-0.5, worldZ+0.5),
-					matrix.NewVec3(worldX+0.5, worldY-0.5, worldZ+0.5),
-					matrix.NewVec3(worldX+0.5, worldY+0.5, worldZ+0.5),
-					matrix.NewVec3(worldX-0.5, worldY+0.5, worldZ+0.5),
+					types.NewVec3(worldX-0.5, worldY-0.5, worldZ+0.5),
+					types.NewVec3(worldX+0.5, worldY-0.5, worldZ+0.5),
+					types.NewVec3(worldX+0.5, worldY+0.5, worldZ+0.5),
+					types.NewVec3(worldX-0.5, worldY+0.5, worldZ+0.5),
 					// Back face
-					matrix.NewVec3(worldX-0.5, worldY-0.5, worldZ-0.5),
-					matrix.NewVec3(worldX-0.5, worldY+0.5, worldZ-0.5),
-					matrix.NewVec3(worldX+0.5, worldY+0.5, worldZ-0.5),
-					matrix.NewVec3(worldX+0.5, worldY-0.5, worldZ-0.5),
+					types.NewVec3(worldX-0.5, worldY-0.5, worldZ-0.5),
+					types.NewVec3(worldX-0.5, worldY+0.5, worldZ-0.5),
+					types.NewVec3(worldX+0.5, worldY+0.5, worldZ-0.5),
+					types.NewVec3(worldX+0.5, worldY-0.5, worldZ-0.5),
 					// Top face
-					matrix.NewVec3(worldX-0.5, worldY+0.5, worldZ-0.5),
-					matrix.NewVec3(worldX-0.5, worldY+0.5, worldZ+0.5),
-					matrix.NewVec3(worldX+0.5, worldY+0.5, worldZ+0.5),
-					matrix.NewVec3(worldX+0.5, worldY+0.5, worldZ-0.5),
+					types.NewVec3(worldX-0.5, worldY+0.5, worldZ-0.5),
+					types.NewVec3(worldX-0.5, worldY+0.5, worldZ+0.5),
+					types.NewVec3(worldX+0.5, worldY+0.5, worldZ+0.5),
+					types.NewVec3(worldX+0.5, worldY+0.5, worldZ-0.5),
 					// Bottom face
-					matrix.NewVec3(worldX-0.5, worldY-0.5, worldZ-0.5),
-					matrix.NewVec3(worldX+0.5, worldY-0.5, worldZ-0.5),
-					matrix.NewVec3(worldX+0.5, worldY-0.5, worldZ+0.5),
-					matrix.NewVec3(worldX-0.5, worldY-0.5, worldZ+0.5),
+					types.NewVec3(worldX-0.5, worldY-0.5, worldZ-0.5),
+					types.NewVec3(worldX+0.5, worldY-0.5, worldZ-0.5),
+					types.NewVec3(worldX+0.5, worldY-0.5, worldZ+0.5),
+					types.NewVec3(worldX-0.5, worldY-0.5, worldZ+0.5),
 					// Right face
-					matrix.NewVec3(worldX+0.5, worldY-0.5, worldZ-0.5),
-					matrix.NewVec3(worldX+0.5, worldY+0.5, worldZ-0.5),
-					matrix.NewVec3(worldX+0.5, worldY+0.5, worldZ+0.5),
-					matrix.NewVec3(worldX+0.5, worldY-0.5, worldZ+0.5),
+					types.NewVec3(worldX+0.5, worldY-0.5, worldZ-0.5),
+					types.NewVec3(worldX+0.5, worldY+0.5, worldZ-0.5),
+					types.NewVec3(worldX+0.5, worldY+0.5, worldZ+0.5),
+					types.NewVec3(worldX+0.5, worldY-0.5, worldZ+0.5),
 					// Left face
-					matrix.NewVec3(worldX-0.5, worldY-0.5, worldZ-0.5),
-					matrix.NewVec3(worldX-0.5, worldY-0.5, worldZ+0.5),
-					matrix.NewVec3(worldX-0.5, worldY+0.5, worldZ+0.5),
-					matrix.NewVec3(worldX-0.5, worldY+0.5, worldZ-0.5),
+					types.NewVec3(worldX-0.5, worldY-0.5, worldZ-0.5),
+					types.NewVec3(worldX-0.5, worldY-0.5, worldZ+0.5),
+					types.NewVec3(worldX-0.5, worldY+0.5, worldZ+0.5),
+					types.NewVec3(worldX-0.5, worldY+0.5, worldZ-0.5),
 				}
 
 				// Cube indices

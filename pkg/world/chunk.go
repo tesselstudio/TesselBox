@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/tesselstudio/TesselBox/pkg/survival"
-	"kaijuengine.com/matrix"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
 // ChunkSize is the size of a chunk in blocks (16x16 hexagonal grid)
@@ -81,11 +81,11 @@ type Chunk struct {
 
 // ChunkMesh holds the renderable mesh data for a chunk
 type ChunkMesh struct {
-	Vertices []matrix.Vec3
+	Vertices []types.Vec3
 	Indices  []uint32
-	Normals  []matrix.Vec3
-	UVs      []matrix.Vec2
-	Colors   []matrix.Color
+	Normals  []types.Vec3
+	UVs      []types.Vec2
+	Colors   []types.Color
 }
 
 // NewChunk creates a new empty chunk

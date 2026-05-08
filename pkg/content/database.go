@@ -30,26 +30,19 @@
 package content
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
-
-	"kaijuengine.com/engine/assets"
-	"kaijuengine.com/platform/profiler/tracing"
 )
 
-// GameContentDatabase wraps a FileDatabase and handles path transformations
-// for game content, similar to how EditorContent works for editor content.
+// GameContentDatabase handles path transformations for game content
 type GameContentDatabase struct {
-	inner assets.Database
+	rootPath string
 }
 
 // NewGameContentDatabase creates a new game content database with path transformation
-func NewGameContentDatabase(root string) (assets.Database, error) {
-	inner, err := assets.NewFileDatabase(root)
-	if err != nil {
-		return nil, err
-	}
-	return &GameContentDatabase{inner: inner}, nil
+func NewGameContentDatabase(root string) (*GameContentDatabase, error) {
+	return &GameContentDatabase{rootPath: root}, nil
 }
 
 // transformPath converts relative content paths to full paths based on file extension
@@ -93,69 +86,71 @@ func transformPath(key string) string {
 	}
 }
 
-func (g *GameContentDatabase) PostWindowCreate(handle assets.PostWindowCreateHandle) error {
-	return g.inner.PostWindowCreate(handle)
+func (g *GameContentDatabase) PostWindowCreate(handle interface{}) error {
+	// No-op for simplified implementation
+	return nil
 }
 
 func (g *GameContentDatabase) Cache(key string, data []byte) {
-	g.inner.Cache(transformPath(key), data)
+	// No-op for simplified implementation
 }
 
 func (g *GameContentDatabase) CacheRemove(key string) {
-	g.inner.CacheRemove(transformPath(key))
+	// No-op for simplified implementation
 }
 
 func (g *GameContentDatabase) CacheClear() {
-	g.inner.CacheClear()
+	// No-op for simplified implementation
 }
 
 func (g *GameContentDatabase) Read(key string) ([]byte, error) {
-	defer tracing.NewRegion("GameContentDatabase.Read: " + key).End()
 	// For PNGs without path prefix, try fonts first (for font textures), then textures
 	if ext := strings.ToLower(filepath.Ext(key)); ext == ".png" || ext == ".jpg" || ext == ".jpeg" {
 		// Only transform if it's just a filename without folder prefix
 		if !strings.Contains(key, "/") && !strings.Contains(key, "\\") {
 			// Try fonts folder first
-			if data, err := g.inner.Read(filepath.Join("fonts", key)); err == nil {
+			if data, err := os.ReadFile(filepath.Join(g.rootPath, "fonts", key)); err == nil {
 				return data, nil
 			}
 			// Fall back to textures folder
-			return g.inner.Read(filepath.Join("textures", key))
+			return os.ReadFile(filepath.Join(g.rootPath, "textures", key))
 		}
 	}
-	return g.inner.Read(transformPath(key))
+	return os.ReadFile(filepath.Join(g.rootPath, transformPath(key)))
 }
 
 func (g *GameContentDatabase) ReadText(key string) (string, error) {
-	defer tracing.NewRegion("GameContentDatabase.ReadText: " + key).End()
 	// For PNGs without path prefix, try fonts first (for font textures), then textures
 	if ext := strings.ToLower(filepath.Ext(key)); ext == ".png" || ext == ".jpg" || ext == ".jpeg" {
 		// Only transform if it's just a filename without folder prefix
 		if !strings.Contains(key, "/") && !strings.Contains(key, "\\") {
-			if data, err := g.inner.ReadText(filepath.Join("fonts", key)); err == nil {
-				return data, nil
+			if data, err := os.ReadFile(filepath.Join(g.rootPath, "fonts", key)); err == nil {
+				return string(data), nil
 			}
-			return g.inner.ReadText(filepath.Join("textures", key))
+			data, err := os.ReadFile(filepath.Join(g.rootPath, "textures", key))
+			return string(data), err
 		}
 	}
-	return g.inner.ReadText(transformPath(key))
+	data, err := os.ReadFile(filepath.Join(g.rootPath, transformPath(key)))
+	return string(data), err
 }
 
 func (g *GameContentDatabase) Exists(key string) bool {
-	defer tracing.NewRegion("GameContentDatabase.Exists: " + key).End()
 	// For PNGs without path prefix, check fonts first, then textures
 	if ext := strings.ToLower(filepath.Ext(key)); ext == ".png" || ext == ".jpg" || ext == ".jpeg" {
 		// Only transform if it's just a filename without folder prefix
 		if !strings.Contains(key, "/") && !strings.Contains(key, "\\") {
-			if g.inner.Exists(filepath.Join("fonts", key)) {
+			if _, err := os.Stat(filepath.Join(g.rootPath, "fonts", key)); err == nil {
 				return true
 			}
-			return g.inner.Exists(filepath.Join("textures", key))
+			_, err := os.Stat(filepath.Join(g.rootPath, "textures", key))
+			return err == nil
 		}
 	}
-	return g.inner.Exists(transformPath(key))
+	_, err := os.Stat(filepath.Join(g.rootPath, transformPath(key)))
+	return err == nil
 }
 
 func (g *GameContentDatabase) Close() {
-	g.inner.Close()
+	// No-op for simplified implementation
 }

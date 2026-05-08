@@ -34,9 +34,25 @@ package blocks
 import (
 	"strconv"
 	"sync"
-
-	"kaijuengine.com/matrix"
 )
+
+// Color represents a simple RGBA color
+type Color struct {
+	R, G, B, A uint8
+}
+
+// Float represents a simple float type
+type Float float32
+
+// ColorGray returns a gray color
+func ColorGray() Color {
+	return Color{128, 128, 128, 255}
+}
+
+// NewColor creates a new color from RGBA values
+func NewColor(r, g, b, a uint8) Color {
+	return Color{r, g, b, a}
+}
 
 // BlockType represents different types of hexagonal blocks
 type BlockType int
@@ -58,9 +74,9 @@ type BlockProperties struct {
 	Solid       bool
 	Transparent bool
 	LightLevel  int
-	TintColor   matrix.Color
-	Mass        matrix.Float
-	Resistance  matrix.Float
+	TintColor   Color
+	Mass        Float
+	Resistance  Float
 }
 
 // BlockRegistry manages all registered block types
@@ -176,7 +192,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Solid:       true,
 			Transparent: false,
 			LightLevel:  0,
-			TintColor:   matrix.ColorGray(),
+			TintColor:   ColorGray(),
 			Mass:        3.0,
 			Resistance:  6.0,
 		},
@@ -187,7 +203,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Solid:       true,
 			Transparent: false,
 			LightLevel:  0,
-			TintColor:   matrix.NewColor(139, 90, 43, 255),
+			TintColor:   NewColor(139, 90, 43, 255),
 			Mass:        2.5,
 			Resistance:  2.5,
 		},
@@ -198,7 +214,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Solid:       true,
 			Transparent: false,
 			LightLevel:  0,
-			TintColor:   matrix.NewColor(124, 252, 0, 255),
+			TintColor:   NewColor(124, 252, 0, 255),
 			Mass:        2.0,
 			Resistance:  3.0,
 		},
@@ -209,7 +225,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Solid:       true,
 			Transparent: false,
 			LightLevel:  0,
-			TintColor:   matrix.NewColor(139, 69, 19, 255),
+			TintColor:   NewColor(139, 69, 19, 255),
 			Mass:        1.5,
 			Resistance:  4.0,
 		},
@@ -220,7 +236,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Solid:       true,
 			Transparent: true,
 			LightLevel:  0,
-			TintColor:   matrix.NewColor(200, 200, 255, 128),
+			TintColor:   NewColor(200, 200, 255, 128),
 			Mass:        2.5,
 			Resistance:  1.5,
 		},
@@ -231,7 +247,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Solid:       false,
 			Transparent: true,
 			LightLevel:  15,
-			TintColor:   matrix.NewColor(64, 164, 223, 180),
+			TintColor:   NewColor(64, 164, 223, 180),
 			Mass:        1.0,
 			Resistance:  0.5,
 		},
@@ -242,7 +258,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Solid:       true,
 			Transparent: false,
 			LightLevel:  0,
-			TintColor:   matrix.ColorGray(),
+			TintColor:   ColorGray(),
 			Mass:        1.5,
 			Resistance:  3.0,
 		},
@@ -253,7 +269,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Solid:       true,
 			Transparent: false,
 			LightLevel:  0,
-			TintColor:   matrix.ColorGray(),
+			TintColor:   ColorGray(),
 			Mass:        1.5,
 			Resistance:  3.0,
 		},
@@ -264,7 +280,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Solid:       true,
 			Transparent: false,
 			LightLevel:  0,
-			TintColor:   matrix.ColorGray(),
+			TintColor:   ColorGray(),
 			Mass:        1.0,
 			Resistance:  3.0,
 		},
@@ -275,7 +291,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Solid:       true,
 			Transparent: false,
 			LightLevel:  0,
-			TintColor:   matrix.ColorGray(),
+			TintColor:   ColorGray(),
 			Mass:        2.0,
 			Resistance:  4.0,
 		},
@@ -286,7 +302,7 @@ func (r *BlockRegistry) registerDefaults() {
 			Solid:       true,
 			Transparent: false,
 			LightLevel:  0,
-			TintColor:   matrix.ColorGray(),
+			TintColor:   ColorGray(),
 			Mass:        1.0,
 			Resistance:  2.0,
 		},

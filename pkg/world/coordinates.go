@@ -25,9 +25,68 @@ package world
 import (
 	"math"
 	"strconv"
-
-	"kaijuengine.com/matrix"
 )
+
+// Vec3 represents a 3D vector
+type Vec3 struct {
+	X, Y, Z float32
+}
+
+// NewVec3 creates a new Vec3
+func NewVec3(x, y, z float32) Vec3 {
+	return Vec3{X: x, Y: y, Z: z}
+}
+
+// GetX returns the X component
+func (v Vec3) GetX() float32 {
+	return v.X
+}
+
+// GetY returns the Y component
+func (v Vec3) GetY() float32 {
+	return v.Y
+}
+
+// GetZ returns the Z component
+func (v Vec3) GetZ() float32 {
+	return v.Z
+}
+
+// SetY sets the Y component
+func (v *Vec3) SetY(y float32) {
+	v.Y = y
+}
+
+// Float represents a simple float type
+type Float float32
+
+// Round rounds a Float to the nearest integer
+func Round(f Float) int {
+	if f < 0 {
+		return int(f - 0.5)
+	}
+	return int(f + 0.5)
+}
+
+// Color represents a simple RGBA color
+type Color struct {
+	R, G, B, A uint8
+}
+
+// NewColor creates a new color from RGBA values
+func NewColor(r, g, b, a uint8) Color {
+	return Color{R: r, G: g, B: b, A: a}
+}
+
+// ColorGray returns a gray color
+func ColorGray() Color {
+	return Color{128, 128, 128, 255}
+}
+
+// ColorWhite returns a white color
+func ColorWhite() Color {
+	return Color{255, 255, 255, 255}
+}
 
 // HexCoord represents a position in hexagonal axial coordinates
 type HexCoord struct {
@@ -41,17 +100,17 @@ func NewHexCoord(q, r int) HexCoord {
 }
 
 // ToWorld converts hexagonal coordinates to 3D world coordinates
-func (h HexCoord) ToWorld(hexSize matrix.Float) matrix.Vec3 {
-	x := matrix.Float(h.Q) * hexSize * 1.5
-	z := matrix.Float(h.Q+h.R) * hexSize * matrix.Float(math.Sqrt(3)*0.5)
+func (h HexCoord) ToWorld(hexSize Float) Vec3 {
+	x := Float(h.Q) * hexSize * 1.5
+	z := Float(h.Q+h.R) * hexSize * Float(math.Sqrt(3)*0.5)
 
-	return matrix.NewVec3(x, 0, z)
+	return NewVec3(float32(x), 0, float32(z))
 }
 
 // ToWorldWithHeight converts hexagonal coordinates to 3D world coordinates with height
-func (h HexCoord) ToWorldWithHeight(hexSize, height matrix.Float) matrix.Vec3 {
+func (h HexCoord) ToWorldWithHeight(hexSize, height Float) Vec3 {
 	world := h.ToWorld(hexSize)
-	world.SetY(height)
+	world.SetY(float32(height))
 	return world
 }
 
@@ -242,12 +301,12 @@ func (d HexDirection) RotateRight() HexDirection {
 
 // HexGrid represents a hexagonal grid
 type HexGrid struct {
-	HexSize matrix.Float
+	HexSize Float
 	Origin  HexCoord
 }
 
 // NewHexGrid creates a new hexagonal grid
-func NewHexGrid(hexSize matrix.Float, origin HexCoord) *HexGrid {
+func NewHexGrid(hexSize Float, origin HexCoord) *HexGrid {
 	return &HexGrid{
 		HexSize: hexSize,
 		Origin:  origin,
@@ -255,22 +314,22 @@ func NewHexGrid(hexSize matrix.Float, origin HexCoord) *HexGrid {
 }
 
 // ToWorld converts grid coordinates to world coordinates
-func (g *HexGrid) ToWorld(coord HexCoord) matrix.Vec3 {
+func (g *HexGrid) ToWorld(coord HexCoord) Vec3 {
 	return coord.ToWorld(g.HexSize)
 }
 
 // ToWorldWithHeight converts grid coordinates to world coordinates with height
-func (g *HexGrid) ToWorldWithHeight(coord HexCoord, height matrix.Float) matrix.Vec3 {
+func (g *HexGrid) ToWorldWithHeight(coord HexCoord, height Float) Vec3 {
 	return coord.ToWorldWithHeight(g.HexSize, height)
 }
 
 // FromWorld converts world coordinates to the nearest hexagonal coordinate
-func (g *HexGrid) FromWorld(worldPos matrix.Vec3) HexCoord {
-	x := worldPos.X()
-	z := worldPos.Z()
+func (g *HexGrid) FromWorld(worldPos Vec3) HexCoord {
+	x := Float(worldPos.X)
+	z := Float(worldPos.Z)
 
-	q := matrix.Round(matrix.Float(2.0/3.0) * (x / g.HexSize))
-	r := matrix.Round((matrix.Float(-1.0/3.0)*x + matrix.Float(math.Sqrt(3)/3.0)*z) / g.HexSize)
+	q := Round(Float(2.0/3.0) * (x / g.HexSize))
+	r := Round((Float(-1.0/3.0)*x + Float(math.Sqrt(3)/3.0)*z) / g.HexSize)
 
 	return HexCoord{
 		Q: int(q),
@@ -287,15 +346,15 @@ func (g *HexGrid) GetBounds(minCoord, maxCoord HexCoord) WorldBounds {
 	padding := g.HexSize
 
 	return WorldBounds{
-		Min: matrix.NewVec3(
-			minWorld.X()-padding,
-			minWorld.Y()-padding,
-			minWorld.Z()-padding,
+		Min: NewVec3(
+			minWorld.X-float32(padding),
+			minWorld.Y-float32(padding),
+			minWorld.Z-float32(padding),
 		),
-		Max: matrix.NewVec3(
-			maxWorld.X()+padding,
-			maxWorld.Y()+padding,
-			maxWorld.Z()+padding,
+		Max: NewVec3(
+			maxWorld.X+float32(padding),
+			maxWorld.Y+float32(padding),
+			maxWorld.Z+float32(padding),
 		),
 	}
 }
@@ -315,32 +374,32 @@ func (g *HexGrid) GetRegion(minCoord, maxCoord HexCoord) []HexCoord {
 
 // WorldBounds represents axis-aligned world bounds
 type WorldBounds struct {
-	Min matrix.Vec3
-	Max matrix.Vec3
+	Min Vec3
+	Max Vec3
 }
 
 // Contains checks if a world position is within these bounds
-func (wb WorldBounds) Contains(pos matrix.Vec3) bool {
-	return pos.X() >= wb.Min.X() && pos.X() <= wb.Max.X() &&
-		pos.Y() >= wb.Min.Y() && pos.Y() <= wb.Max.Y() &&
-		pos.Z() >= wb.Min.Z() && pos.Z() <= wb.Max.Z()
+func (wb WorldBounds) Contains(pos Vec3) bool {
+	return pos.X >= wb.Min.X && pos.X <= wb.Max.X &&
+		pos.Y >= wb.Min.Y && pos.Y <= wb.Max.Y &&
+		pos.Z >= wb.Min.Z && pos.Z <= wb.Max.Z
 }
 
 // GetCenter returns the center of these bounds
-func (wb WorldBounds) GetCenter() matrix.Vec3 {
-	return matrix.NewVec3(
-		(wb.Min.X()+wb.Max.X())/2,
-		(wb.Min.Y()+wb.Max.Y())/2,
-		(wb.Min.Z()+wb.Max.Z())/2,
+func (wb WorldBounds) GetCenter() Vec3 {
+	return NewVec3(
+		(wb.Min.X+wb.Max.X)/2,
+		(wb.Min.Y+wb.Max.Y)/2,
+		(wb.Min.Z+wb.Max.Z)/2,
 	)
 }
 
 // GetSize returns the size of these bounds
-func (wb WorldBounds) GetSize() matrix.Vec3 {
-	return matrix.NewVec3(
-		wb.Max.X()-wb.Min.X(),
-		wb.Max.Y()-wb.Min.Y(),
-		wb.Max.Z()-wb.Min.Z(),
+func (wb WorldBounds) GetSize() Vec3 {
+	return NewVec3(
+		wb.Max.X-wb.Min.X,
+		wb.Max.Y-wb.Min.Y,
+		wb.Max.Z-wb.Min.Z,
 	)
 }
 
