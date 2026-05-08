@@ -23,14 +23,14 @@ func main() {
 		fmt.Println("🎮 This is the REAL game interface (not test mode)")
 		fmt.Println("")
 
-		// Create Fyne bridge directly without engine host
+		// Create Fyne UI directly without engine host
 		// This will show the modern login screen
-		bridge := ui.NewFyneKaijuBridge(nil)
-		bridge.ShowFyneLogin()
+		ui := ui.NewModernFyneUI()
+		ui.ShowLogin()
 
 		// Run the Fyne application
 		fmt.Println("🔄 Starting Fyne application...")
-		bridge.Run()
+		ui.Run()
 
 	} else {
 		fmt.Println("❌ Fyne UI is disabled")

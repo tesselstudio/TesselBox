@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/tesselstudio/TesselBox/pkg/blocks"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 	"github.com/tesselstudio/TesselBox/pkg/world"
-	"kaijuengine.com/matrix"
 )
 
 // Server represents the game server
@@ -63,9 +63,9 @@ type ServerClient struct {
 type Player struct {
 	ID       uint32
 	Name     string
-	Position matrix.Vec3
-	Rotation matrix.Vec3
-	Velocity matrix.Vec3
+	Position types.Vec3
+	Rotation types.Vec3
+	Velocity types.Vec3
 	Health   uint16
 	WorldPos world.HexCoord
 }
@@ -80,7 +80,7 @@ type ClientMessage struct {
 type WorldManager struct {
 	chunks   map[world.HexCoord]*Chunk
 	chunksMu sync.RWMutex
-	blocks   map[matrix.Vec3]*blocks.Block
+	blocks   map[types.Vec3]*blocks.Block
 	blocksMu sync.RWMutex
 	config   ServerConfig
 }
@@ -88,7 +88,7 @@ type WorldManager struct {
 // Chunk represents a chunk of the world
 type Chunk struct {
 	Position world.HexCoord
-	Blocks   map[matrix.Vec3]*blocks.Block
+	Blocks   map[types.Vec3]*blocks.Block
 	Dirty    bool
 }
 
@@ -278,9 +278,9 @@ func (s *Server) handleConnection(conn net.Conn) {
 	client.Player = &Player{
 		ID:       client.ID,
 		Name:     client.Name,
-		Position: matrix.NewVec3(0, 10, 0), // Start above ground
-		Rotation: matrix.NewVec3(0, 0, 0),
-		Velocity: matrix.NewVec3(0, 0, 0),
+		Position: types.NewVec3(0, 10, 0), // Start above ground
+		Rotation: types.NewVec3(0, 0, 0),
+		Velocity: types.NewVec3(0, 0, 0),
 		Health:   100,
 	}
 
@@ -626,7 +626,7 @@ func (s *Server) broadcastToOthers(excludePlayerID uint32, msg *Message) {
 func NewWorldManager(config ServerConfig) *WorldManager {
 	return &WorldManager{
 		chunks: make(map[world.HexCoord]*Chunk),
-		blocks: make(map[matrix.Vec3]*blocks.Block),
+		blocks: make(map[types.Vec3]*blocks.Block),
 		config: config,
 	}
 }
@@ -644,7 +644,7 @@ func (wm *WorldManager) AddBlock(block *blocks.Block) {
 }
 
 // RemoveBlock removes a block from the world
-func (wm *WorldManager) RemoveBlock(position matrix.Vec3) {
+func (wm *WorldManager) RemoveBlock(position types.Vec3) {
 	wm.blocksMu.Lock()
 	defer wm.blocksMu.Unlock()
 
@@ -656,7 +656,7 @@ func (wm *WorldManager) RemoveBlock(position matrix.Vec3) {
 }
 
 // GetBlock gets a block from the world
-func (wm *WorldManager) GetBlock(position matrix.Vec3) (*blocks.Block, bool) {
+func (wm *WorldManager) GetBlock(position types.Vec3) (*blocks.Block, bool) {
 	wm.blocksMu.RLock()
 	defer wm.blocksMu.RUnlock()
 
@@ -672,9 +672,10 @@ func (wm *WorldManager) Update() {
 }
 
 // getChunkPosition gets the chunk position for a world position
-func (wm *WorldManager) getChunkPosition(worldPos matrix.Vec3) world.HexCoord {
-	grid := world.NewHexGrid(matrix.Float(wm.config.ChunkSize), world.NewHexCoord(0, 0))
-	return grid.FromWorld(worldPos)
+func (wm *WorldManager) getChunkPosition(worldPos types.Vec3) world.HexCoord {
+	grid := world.NewHexGrid(world.Float(wm.config.ChunkSize), world.NewHexCoord(0, 0))
+	worldVec := world.Vec3{X: worldPos.X, Y: worldPos.Y, Z: worldPos.Z}
+	return grid.FromWorld(worldVec)
 }
 
 // markChunkDirty marks a chunk as dirty
@@ -686,7 +687,7 @@ func (wm *WorldManager) markChunkDirty(chunkPos world.HexCoord) {
 	if !exists {
 		chunk = &Chunk{
 			Position: chunkPos,
-			Blocks:   make(map[matrix.Vec3]*blocks.Block),
+			Blocks:   make(map[types.Vec3]*blocks.Block),
 			Dirty:    true,
 		}
 		wm.chunks[chunkPos] = chunk

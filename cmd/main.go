@@ -8,7 +8,7 @@ import (
 
 // TesselBoxGame represents the main game state
 type TesselBoxGame struct {
-	fyneUI *ui.FyneKaijuBridge
+	fyneUI *ui.ModernFyneUI
 }
 
 // Version is set at build time
@@ -29,12 +29,12 @@ func main() {
 	fmt.Println("✅ Launching Fyne UI - Modern Interface")
 	fmt.Println("🎮 Complete Fyne UI integration (no Kaiju UI)")
 
-	// Create Fyne bridge
+	// Create Fyne UI
 	game := &TesselBoxGame{}
-	game.fyneUI = ui.NewFyneKaijuBridge(nil)
+	game.fyneUI = ui.NewModernFyneUI()
 
 	// Show login screen
-	game.fyneUI.ShowFyneLogin()
+	game.fyneUI.ShowLogin()
 
 	// Run the Fyne application
 	fmt.Println("🔄 Starting Fyne application...")

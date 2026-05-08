@@ -2,7 +2,8 @@ package crafting
 
 import (
 	"sync"
-	"kaijuengine.com/matrix"
+
+	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
 // ItemType represents different types of items
@@ -26,7 +27,7 @@ type Item struct {
 	Description string
 	MaxStack    int
 	Durability  int
-	Weight      matrix.Float
+	Weight      types.Float
 	Value       int
 	Tags        []string
 	Properties  map[string]interface{}
@@ -64,7 +65,7 @@ func (is *ItemStack) Stack(other *ItemStack) bool {
 	if !is.CanStack(other) {
 		return false
 	}
-	
+
 	is.Quantity += other.Quantity
 	return true
 }
@@ -74,11 +75,11 @@ func (is *ItemStack) Split(quantity int) *ItemStack {
 	if quantity <= 0 || quantity >= is.Quantity {
 		return nil
 	}
-	
+
 	split := NewItemStack(is.Item, quantity)
 	split.Damage = is.Damage
 	is.Quantity -= quantity
-	
+
 	return split
 }
 
@@ -105,10 +106,10 @@ func NewItemRegistry() *ItemRegistry {
 		items:  make(map[string]*Item),
 		byType: make(map[ItemType][]*Item),
 	}
-	
+
 	// Register default items
 	registry.registerDefaults()
-	
+
 	return registry
 }
 
@@ -116,14 +117,14 @@ func NewItemRegistry() *ItemRegistry {
 func (ir *ItemRegistry) RegisterItem(item *Item) error {
 	ir.mu.Lock()
 	defer ir.mu.Unlock()
-	
+
 	if _, exists := ir.items[item.ID]; exists {
 		return ErrItemAlreadyExists
 	}
-	
+
 	ir.items[item.ID] = item
 	ir.byType[item.Type] = append(ir.byType[item.Type], item)
-	
+
 	return nil
 }
 
@@ -131,7 +132,7 @@ func (ir *ItemRegistry) RegisterItem(item *Item) error {
 func (ir *ItemRegistry) GetItem(id string) (*Item, bool) {
 	ir.mu.RLock()
 	defer ir.mu.RUnlock()
-	
+
 	item, exists := ir.items[id]
 	return item, exists
 }
@@ -140,10 +141,10 @@ func (ir *ItemRegistry) GetItem(id string) (*Item, bool) {
 func (ir *ItemRegistry) GetItemsByType(itemType ItemType) []*Item {
 	ir.mu.RLock()
 	defer ir.mu.RUnlock()
-	
+
 	items := make([]*Item, len(ir.byType[itemType]))
 	copy(items, ir.byType[itemType])
-	
+
 	return items
 }
 
@@ -151,12 +152,12 @@ func (ir *ItemRegistry) GetItemsByType(itemType ItemType) []*Item {
 func (ir *ItemRegistry) GetAllItems() []*Item {
 	ir.mu.RLock()
 	defer ir.mu.RUnlock()
-	
+
 	items := make([]*Item, 0, len(ir.items))
 	for _, item := range ir.items {
 		items = append(items, item)
 	}
-	
+
 	return items
 }
 
@@ -252,7 +253,7 @@ func (ir *ItemRegistry) registerDefaults() {
 			Value:       50,
 			Tags:        []string{"gem", "precious", "material"},
 		},
-		
+
 		// Tools
 		{
 			ID:          "wooden_pickaxe",
@@ -314,7 +315,7 @@ func (ir *ItemRegistry) registerDefaults() {
 				"mining_speed": 2.0,
 			},
 		},
-		
+
 		// Weapons
 		{
 			ID:          "wooden_sword",
@@ -327,7 +328,7 @@ func (ir *ItemRegistry) registerDefaults() {
 			Value:       5,
 			Tags:        []string{"weapon", "sword", "wooden"},
 			Properties: map[string]interface{}{
-				"damage": 4,
+				"damage":       4,
 				"attack_speed": 1.6,
 			},
 		},
@@ -342,11 +343,11 @@ func (ir *ItemRegistry) registerDefaults() {
 			Value:       25,
 			Tags:        []string{"weapon", "sword", "iron"},
 			Properties: map[string]interface{}{
-				"damage": 6,
+				"damage":       6,
 				"attack_speed": 1.6,
 			},
 		},
-		
+
 		// Food
 		{
 			ID:          "apple",
@@ -378,7 +379,7 @@ func (ir *ItemRegistry) registerDefaults() {
 				"health_restoration": 0,
 			},
 		},
-		
+
 		// Armor
 		{
 			ID:          "leather_helmet",
@@ -411,7 +412,7 @@ func (ir *ItemRegistry) registerDefaults() {
 			},
 		},
 	}
-	
+
 	for _, item := range defaultItems {
 		ir.items[item.ID] = item
 		ir.byType[item.Type] = append(ir.byType[item.Type], item)
@@ -469,10 +470,10 @@ func ItemIDToBlockID(itemID string) uint16 {
 // Errors
 var (
 	ErrItemAlreadyExists = &ItemError{Message: "item already exists"}
-	ErrItemNotFound     = &ItemError{Message: "item not found"}
-	ErrInvalidItemType  = &ItemError{Message: "invalid item type"}
-	ErrStackFull       = &ItemError{Message: "stack is full"}
-	ErrCannotStack     = &ItemError{Message: "items cannot be stacked"}
+	ErrItemNotFound      = &ItemError{Message: "item not found"}
+	ErrInvalidItemType   = &ItemError{Message: "invalid item type"}
+	ErrStackFull         = &ItemError{Message: "stack is full"}
+	ErrCannotStack       = &ItemError{Message: "items cannot be stacked"}
 )
 
 // ItemError represents an item-related error

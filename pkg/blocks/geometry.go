@@ -3,19 +3,19 @@ package blocks
 import (
 	"math"
 
-	"kaijuengine.com/matrix"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
 // HexPrism represents a hexagonal prism with configurable properties
 type HexPrism struct {
-	Center   matrix.Vec3
-	Radius   matrix.Float
-	Height   matrix.Float
+	Center   types.Vec3
+	Radius   types.Float
+	Height   types.Float
 	Rotation int // 0-5 orientations (60-degree increments)
 }
 
 // NewHexPrism creates a new hexagonal prism with standard dimensions
-func NewHexPrism(center matrix.Vec3, radius, height matrix.Float) *HexPrism {
+func NewHexPrism(center types.Vec3, radius, height types.Float) *HexPrism {
 	return &HexPrism{
 		Center:   center,
 		Radius:   radius,
@@ -26,27 +26,27 @@ func NewHexPrism(center matrix.Vec3, radius, height matrix.Float) *HexPrism {
 
 // GenerateVertices creates the vertex data for the hexagonal prism
 // Returns 24 vertices: 6 top hexagon + 6 bottom hexagon + 12 side rectangles
-func (h *HexPrism) GenerateVertices() []matrix.Vec3 {
-	vertices := make([]matrix.Vec3, 24)
+func (h *HexPrism) GenerateVertices() []types.Vec3 {
+	vertices := make([]types.Vec3, 24)
 
 	// Generate hexagonal points
 	hexPoints := h.generateHexagonPoints()
 
 	// Top hexagon vertices (indices 0-5)
 	for i := 0; i < 6; i++ {
-		vertices[i] = matrix.NewVec3(
-			hexPoints[i][0],
-			h.Center.Y()+h.Height/2,
-			hexPoints[i][1],
+		vertices[i] = types.NewVec3(
+			hexPoints[i].X,
+			h.Center.Y+float32(h.Height)/2,
+			hexPoints[i].Y,
 		)
 	}
 
 	// Bottom hexagon vertices (indices 6-11)
 	for i := 0; i < 6; i++ {
-		vertices[i+6] = matrix.NewVec3(
-			hexPoints[i][0],
-			h.Center.Y()-h.Height/2,
-			hexPoints[i][1],
+		vertices[i+6] = types.NewVec3(
+			hexPoints[i].X,
+			h.Center.Y-float32(h.Height)/2,
+			hexPoints[i].Y,
 		)
 	}
 
@@ -132,25 +132,24 @@ func (h *HexPrism) GenerateIndices() []uint32 {
 }
 
 // GenerateNormals creates normal vectors for each vertex
-func (h *HexPrism) GenerateNormals() []matrix.Vec3 {
-	normals := make([]matrix.Vec3, 24)
+func (h *HexPrism) GenerateNormals() []types.Vec3 {
+	normals := make([]types.Vec3, 24)
 
 	// Top hexagon normals (pointing up)
 	for i := 0; i < 6; i++ {
-		normals[i] = matrix.NewVec3(0, 1, 0)
+		normals[i] = types.NewVec3(0, 1, 0)
 	}
 
 	// Bottom hexagon normals (pointing down)
 	for i := 0; i < 6; i++ {
-		normals[i+6] = matrix.NewVec3(0, -1, 0)
+		normals[i+6] = types.NewVec3(0, -1, 0)
 	}
 
 	// Side normals (pointing outward)
 	hexPoints := h.generateHexagonPoints()
 	for i := 0; i < 6; i++ {
-		// Calculate outward normal for this side
-		normal := matrix.NewVec3(hexPoints[i][0], 0, hexPoints[i][1])
-		normal = normal.Normal()
+		// Calculate outward normal for this side (already normalized)
+		normal := types.NewVec3(hexPoints[i].X, 0, hexPoints[i].Y)
 
 		// Apply to both vertices of this side
 		normals[12+i*2] = normal
@@ -161,15 +160,15 @@ func (h *HexPrism) GenerateNormals() []matrix.Vec3 {
 }
 
 // GenerateUVCoordinates creates UV mapping for the hexagonal prism
-func (h *HexPrism) GenerateUVCoordinates() []matrix.Vec2 {
-	uvs := make([]matrix.Vec2, 24)
+func (h *HexPrism) GenerateUVCoordinates() []types.Vec2 {
+	uvs := make([]types.Vec2, 24)
 
 	// Top hexagon UVs
 	for i := 0; i < 6; i++ {
 		angle := float64(i) * math.Pi / 3.0
-		u := matrix.Float((math.Cos(angle) + 1) * 0.5)
-		v := matrix.Float((math.Sin(angle) + 1) * 0.5)
-		uvs[i] = matrix.NewVec2(u, v)
+		u := types.Float((math.Cos(angle) + 1) * 0.5)
+		v := types.Float((math.Sin(angle) + 1) * 0.5)
+		uvs[i] = types.NewVec2(float32(u), float32(v))
 	}
 
 	// Bottom hexagon UVs (same as top)
@@ -180,25 +179,25 @@ func (h *HexPrism) GenerateUVCoordinates() []matrix.Vec2 {
 	// Side UVs (simple mapping)
 	for i := 0; i < 6; i++ {
 		// Each side gets a strip of UV coordinates
-		uStart := matrix.Float(float64(i)) / 6.0
-		uEnd := matrix.Float(float64(i+1)) / 6.0
+		uStart := types.Float(float64(i)) / 6.0
+		uEnd := types.Float(float64(i+1)) / 6.0
 
-		uvs[12+i*2] = matrix.NewVec2(uStart, 0)
-		uvs[12+i*2+1] = matrix.NewVec2(uEnd, 0)
+		uvs[12+i*2] = types.NewVec2(float32(uStart), 0)
+		uvs[12+i*2+1] = types.NewVec2(float32(uEnd), 0)
 	}
 
 	return uvs
 }
 
 // generateHexagonPoints creates the 2D hexagon points in the XZ plane
-func (h *HexPrism) generateHexagonPoints() []matrix.Vec2 {
-	points := make([]matrix.Vec2, 6)
+func (h *HexPrism) generateHexagonPoints() []types.Vec2 {
+	points := make([]types.Vec2, 6)
 
 	for i := 0; i < 6; i++ {
 		angle := float64(i+h.Rotation) * math.Pi / 3.0
-		x := matrix.Float(math.Cos(angle)) * h.Radius
-		z := matrix.Float(math.Sin(angle)) * h.Radius
-		points[i] = matrix.NewVec2(x+h.Center.X(), z+h.Center.Z())
+		x := float32(types.Float(math.Cos(angle))) * float32(h.Radius)
+		z := float32(types.Float(math.Sin(angle))) * float32(h.Radius)
+		points[i] = types.NewVec2(float32(x)+h.Center.X, float32(z)+h.Center.Z)
 	}
 
 	return points
@@ -228,16 +227,16 @@ func (h *HexPrism) GetAttachmentFaces() []AttachmentFace {
 	faces[6] = AttachmentFace{
 		Type:   FaceTypeTop,
 		Index:  6,
-		Normal: matrix.NewVec3(0, 1, 0),
-		Center: matrix.NewVec3(h.Center.X(), h.Center.Y()+h.Height/2, h.Center.Z()),
+		Normal: types.NewVec3(0, 1, 0),
+		Center: types.NewVec3(h.Center.X, h.Center.Y+float32(h.Height)/2, h.Center.Z),
 		Area:   h.calculateHexagonArea(),
 	}
 
 	faces[7] = AttachmentFace{
 		Type:   FaceTypeBottom,
 		Index:  7,
-		Normal: matrix.NewVec3(0, -1, 0),
-		Center: matrix.NewVec3(h.Center.X(), h.Center.Y()-h.Height/2, h.Center.Z()),
+		Normal: types.NewVec3(0, -1, 0),
+		Center: types.NewVec3(h.Center.X, h.Center.Y-float32(h.Height)/2, h.Center.Z),
 		Area:   h.calculateHexagonArea(),
 	}
 
@@ -245,38 +244,38 @@ func (h *HexPrism) GetAttachmentFaces() []AttachmentFace {
 }
 
 // calculateSideNormal calculates the normal vector for a side face
-func (h *HexPrism) calculateSideNormal(index int) matrix.Vec3 {
+func (h *HexPrism) calculateSideNormal(index int) types.Vec3 {
 	angle := float64(index+h.Rotation) * math.Pi / 3.0
-	return matrix.NewVec3(
-		matrix.Float(math.Cos(angle)),
+	return types.NewVec3(
+		float32(types.Float(math.Cos(angle))),
 		0,
-		matrix.Float(math.Sin(angle)),
+		float32(types.Float(math.Sin(angle))),
 	)
 }
 
 // calculateSideCenter calculates the center point of a side face
-func (h *HexPrism) calculateSideCenter(index int) matrix.Vec3 {
+func (h *HexPrism) calculateSideCenter(index int) types.Vec3 {
 	angle := float64(index+h.Rotation) + 0.5
 	angle = angle * math.Pi / 3.0
-	return matrix.NewVec3(
-		h.Center.X()+matrix.Float(math.Cos(angle))*h.Radius*0.5,
-		h.Center.Y(),
-		h.Center.Z()+matrix.Float(math.Sin(angle))*h.Radius*0.5,
+	return types.NewVec3(
+		h.Center.X+float32(types.Float(math.Cos(angle)))*float32(h.Radius)*0.5,
+		h.Center.Y,
+		h.Center.Z+float32(types.Float(math.Sin(angle)))*float32(h.Radius)*0.5,
 	)
 }
 
 // calculateHexagonArea calculates the area of the hexagonal face
-func (h *HexPrism) calculateHexagonArea() matrix.Float {
-	return matrix.Float(3.0*math.Sqrt(3.0)*0.5) * h.Radius * h.Radius
+func (h *HexPrism) calculateHexagonArea() types.Float {
+	return types.Float(3.0*math.Sqrt(3.0)*0.5) * h.Radius * h.Radius
 }
 
 // AttachmentFace represents a face where other blocks can attach
 type AttachmentFace struct {
 	Type   FaceType
 	Index  int
-	Normal matrix.Vec3
-	Center matrix.Vec3
-	Area   matrix.Float
+	Normal types.Vec3
+	Center types.Vec3
+	Area   types.Float
 }
 
 // FaceType represents the type of attachment face

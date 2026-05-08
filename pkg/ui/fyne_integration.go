@@ -5,23 +5,20 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"kaijuengine.com/engine"
 )
 
-// FyneUIWrapper wraps Fyne functionality for integration with Kaiju Engine
+// FyneUIWrapper wraps Fyne functionality for integration
 type FyneUIWrapper struct {
 	app    fyne.App
 	window fyne.Window
-	host   *engine.Host
 }
 
 // NewFyneUIWrapper creates a new Fyne UI wrapper
-func NewFyneUIWrapper(host *engine.Host) *FyneUIWrapper {
+func NewFyneUIWrapper() *FyneUIWrapper {
 	fyneApp := app.New()
 
 	wrapper := &FyneUIWrapper{
-		app:  fyneApp,
-		host: host,
+		app: fyneApp,
 	}
 
 	return wrapper

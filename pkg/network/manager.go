@@ -5,17 +5,16 @@ import (
 	"sync"
 	"time"
 
-	"kaijuengine.com/engine"
-	"kaijuengine.com/matrix"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
 // NetworkCallback defines functions that the game implements to handle network events
 type NetworkCallback interface {
-	OnPlayerJoin(playerID uint32, name string, position matrix.Vec3)
+	OnPlayerJoin(playerID uint32, name string, position types.Vec3)
 	OnPlayerLeave(playerID uint32)
-	OnPlayerMove(playerID uint32, position, rotation matrix.Vec3)
-	OnBlockPlace(playerID uint32, blockType uint8, position matrix.Vec3)
-	OnBlockBreak(playerID uint32, position matrix.Vec3)
+	OnPlayerMove(playerID uint32, position, rotation types.Vec3)
+	OnBlockPlace(playerID uint32, blockType uint8, position types.Vec3)
+	OnBlockBreak(playerID uint32, position types.Vec3)
 	OnChatMessage(playerID uint32, message string)
 }
 
@@ -41,18 +40,15 @@ type Manager struct {
 
 	// Pending updates to process
 	pendingUpdates []NetworkUpdate
-
-	// Host reference for entity creation
-	host *engine.Host
 }
 
 // RemotePlayerState tracks a remote player's state
 type RemotePlayerState struct {
-	ID       uint32
-	Name     string
-	Position matrix.Vec3
-	Rotation matrix.Vec3
-	Velocity matrix.Vec3
+	ID         uint32
+	Name       string
+	Position   types.Vec3
+	Rotation   types.Vec3
+	Velocity   types.Vec3
 	LastUpdate time.Time
 }
 
@@ -76,9 +72,8 @@ const (
 )
 
 // NewManager creates a new network manager
-func NewManager(host *engine.Host) *Manager {
+func NewManager() *Manager {
 	return &Manager{
-		host:           host,
 		remotePlayers:  make(map[uint32]*RemotePlayerState),
 		pendingUpdates: make([]NetworkUpdate, 0),
 	}
@@ -277,7 +272,7 @@ func (m *Manager) Update() {
 }
 
 // SendBlockPlace notifies the server of a block placement
-func (m *Manager) SendBlockPlace(blockType uint8, position matrix.Vec3, rotation int) {
+func (m *Manager) SendBlockPlace(blockType uint8, position types.Vec3, rotation int) {
 	m.mu.RLock()
 	client := m.client
 	m.mu.RUnlock()
@@ -288,7 +283,7 @@ func (m *Manager) SendBlockPlace(blockType uint8, position matrix.Vec3, rotation
 }
 
 // SendBlockBreak notifies the server of a block break
-func (m *Manager) SendBlockBreak(position matrix.Vec3) {
+func (m *Manager) SendBlockBreak(position types.Vec3) {
 	m.mu.RLock()
 	client := m.client
 	m.mu.RUnlock()

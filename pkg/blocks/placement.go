@@ -1,30 +1,32 @@
 package blocks
 
 import (
-	"kaijuengine.com/matrix"
+	"math"
+
+	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
 // Block represents a placed block in the world
 type Block struct {
 	Type       BlockType
-	Position   matrix.Vec3
+	Position   types.Vec3
 	Rotation   int // 0-5 orientations
 	Properties *BlockProperties
 	Prism      *HexPrism
 }
 
 // NewBlock creates a new block instance
-func NewBlock(blockType BlockType, position matrix.Vec3, rotation int) (*Block, error) {
+func NewBlock(blockType BlockType, position types.Vec3, rotation int) (*Block, error) {
 	registry := GetGlobalRegistry()
 	props, exists := registry.GetBlockByType(blockType)
 	if !exists {
 		return nil, ErrBlockNotFound
 	}
-	
+
 	// Create hexagonal prism for this block
 	prism := NewHexPrism(position, 1.0, 2.0) // Default dimensions
 	prism.SetRotation(rotation)
-	
+
 	return &Block{
 		Type:       blockType,
 		Position:   position,
@@ -62,13 +64,16 @@ func (b *Block) canAttachFull(face AttachmentFace, otherBlock *Block) bool {
 	if !otherBlock.Properties.Solid {
 		return false
 	}
-	
+
 	// Check for collision (simplified)
-	distance := b.Position.Distance(otherBlock.Position)
+	dx := b.Position.X - otherBlock.Position.X
+	dy := b.Position.Y - otherBlock.Position.Y
+	dz := b.Position.Z - otherBlock.Position.Z
+	distance := float32(math.Sqrt(float64(dx*dx + dy*dy + dz*dz)))
 	if distance < 0.1 { // Blocks are too close
 		return false
 	}
-	
+
 	return true
 }
 
@@ -78,7 +83,7 @@ func (b *Block) canAttachHalfVertical(face AttachmentFace, otherBlock *Block) bo
 	if face.Type == FaceTypeTop || face.Type == FaceTypeBottom {
 		return false // Can't attach on flat ends of vertical half
 	}
-	
+
 	return otherBlock.Properties.Solid
 }
 
@@ -88,7 +93,7 @@ func (b *Block) canAttachHalfHorizontal(face AttachmentFace, otherBlock *Block) 
 	if face.Type == FaceTypeBottom {
 		return false // Can't attach on bottom
 	}
-	
+
 	return otherBlock.Properties.Solid
 }
 
@@ -97,13 +102,13 @@ func (b *Block) canAttachCorner(face AttachmentFace, otherBlock *Block) bool {
 	// Corner blocks have very limited attachment points
 	// Only allow attachment on specific faces based on rotation
 	allowedFaces := b.getCornerAttachmentFaces()
-	
+
 	for _, allowedFace := range allowedFaces {
 		if face.Index == allowedFace {
 			return otherBlock.Properties.Solid
 		}
 	}
-	
+
 	return false
 }
 
@@ -114,7 +119,7 @@ func (b *Block) canAttachStairs(face AttachmentFace, otherBlock *Block) bool {
 	if face.Type == FaceTypeBottom {
 		return false
 	}
-	
+
 	return otherBlock.Properties.Solid
 }
 
@@ -125,7 +130,7 @@ func (b *Block) canAttachSlab(face AttachmentFace, otherBlock *Block) bool {
 	if face.Type == FaceTypeBottom {
 		return false
 	}
-	
+
 	return otherBlock.Properties.Solid
 }
 
@@ -155,18 +160,19 @@ func (b *Block) getCornerAttachmentFaces() []int {
 func (b *Block) GetAttachmentPoints() []AttachmentPoint {
 	faces := b.Prism.GetAttachmentFaces()
 	points := make([]AttachmentPoint, 0, len(faces))
-	
+
 	for _, face := range faces {
 		// Calculate attachment point position
-		pointPos := face.Center.Add(face.Normal.Scale(0.1))
-		
+		scaledNormal := types.NewVec3(face.Normal.X*0.1, face.Normal.Y*0.1, face.Normal.Z*0.1)
+		pointPos := types.NewVec3(face.Center.X+scaledNormal.X, face.Center.Y+scaledNormal.Y, face.Center.Z+scaledNormal.Z)
+
 		points = append(points, AttachmentPoint{
 			Position: pointPos,
 			Face:     face,
 			Block:    b,
 		})
 	}
-	
+
 	return points
 }
 
@@ -181,17 +187,17 @@ func (b *Block) GetBounds() BlockBounds {
 	// Calculate bounds based on hexagonal prism
 	radius := b.Prism.Radius
 	height := b.Prism.Height
-	
+
 	return BlockBounds{
-		Min: matrix.NewVec3(
-			b.Position.X() - radius,
-			b.Position.Y() - height/2,
-			b.Position.Z() - radius,
+		Min: types.NewVec3(
+			b.Position.X-float32(radius),
+			b.Position.Y-float32(height)/2,
+			b.Position.Z-float32(radius),
 		),
-		Max: matrix.NewVec3(
-			b.Position.X() + radius,
-			b.Position.Y() + height/2,
-			b.Position.Z() + radius,
+		Max: types.NewVec3(
+			b.Position.X+float32(radius),
+			b.Position.Y+float32(height)/2,
+			b.Position.Z+float32(radius),
 		),
 	}
 }
@@ -200,51 +206,51 @@ func (b *Block) GetBounds() BlockBounds {
 func (b *Block) Intersects(other *Block) bool {
 	bounds1 := b.GetBounds()
 	bounds2 := other.GetBounds()
-	
+
 	return bounds1.Intersects(bounds2)
 }
 
 // AttachmentPoint represents a point where another block can be attached
 type AttachmentPoint struct {
-	Position matrix.Vec3
+	Position types.Vec3
 	Face     AttachmentFace
 	Block    *Block
 }
 
 // BlockBounds represents the axis-aligned bounding box of a block
 type BlockBounds struct {
-	Min matrix.Vec3
-	Max matrix.Vec3
+	Min types.Vec3
+	Max types.Vec3
 }
 
 // Intersects checks if this bounding box intersects with another
 func (bb BlockBounds) Intersects(other BlockBounds) bool {
-	return (bb.Min.X() <= other.Max.X() && bb.Max.X() >= other.Min.X()) &&
-		(bb.Min.Y() <= other.Max.Y() && bb.Max.Y() >= other.Min.Y()) &&
-		(bb.Min.Z() <= other.Max.Z() && bb.Max.Z() >= other.Min.Z())
+	return (bb.Min.X <= other.Max.X && bb.Max.X >= other.Min.X) &&
+		(bb.Min.Y <= other.Max.Y && bb.Max.Y >= other.Min.Y) &&
+		(bb.Min.Z <= other.Max.Z && bb.Max.Z >= other.Min.Z)
 }
 
 // Contains checks if a point is inside this bounding box
-func (bb BlockBounds) Contains(point matrix.Vec3) bool {
-	return point.X() >= bb.Min.X() && point.X() <= bb.Max.X() &&
-		point.Y() >= bb.Min.Y() && point.Y() <= bb.Max.Y() &&
-		point.Z() >= bb.Min.Z() && point.Z() <= bb.Max.Z()
+func (bb BlockBounds) Contains(point types.Vec3) bool {
+	return point.X >= bb.Min.X && point.X <= bb.Max.X &&
+		point.Y >= bb.Min.Y && point.Y <= bb.Max.Y &&
+		point.Z >= bb.Min.Z && point.Z <= bb.Max.Z
 }
 
 // GetCenter returns the center point of this bounding box
-func (bb BlockBounds) GetCenter() matrix.Vec3 {
-	return matrix.NewVec3(
-		(bb.Min.X() + bb.Max.X()) / 2,
-		(bb.Min.Y() + bb.Max.Y()) / 2,
-		(bb.Min.Z() + bb.Max.Z()) / 2,
+func (bb BlockBounds) GetCenter() types.Vec3 {
+	return types.NewVec3(
+		(bb.Min.X+bb.Max.X)/2,
+		(bb.Min.Y+bb.Max.Y)/2,
+		(bb.Min.Z+bb.Max.Z)/2,
 	)
 }
 
 // GetSize returns the size of this bounding box
-func (bb BlockBounds) GetSize() matrix.Vec3 {
-	return matrix.NewVec3(
-		bb.Max.X() - bb.Min.X(),
-		bb.Max.Y() - bb.Min.Y(),
-		bb.Max.Z() - bb.Min.Z(),
+func (bb BlockBounds) GetSize() types.Vec3 {
+	return types.NewVec3(
+		bb.Max.X-bb.Min.X,
+		bb.Max.Y-bb.Min.Y,
+		bb.Max.Z-bb.Min.Z,
 	)
 }

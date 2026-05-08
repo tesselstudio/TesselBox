@@ -3,7 +3,7 @@ package world
 import (
 	"sync"
 
-	"kaijuengine.com/matrix"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
 // World represents the game world containing all chunks and systems
@@ -27,7 +27,7 @@ type World struct {
 	timeOfDay int
 
 	// World spawn point
-	spawnPoint matrix.Vec3
+	spawnPoint Vec3
 
 	// Running state
 	running bool
@@ -36,11 +36,11 @@ type World struct {
 // NewWorld creates a new world with the given name and seed
 func NewWorld(name string, seed int64) *World {
 	w := &World{
-		Name:        name,
-		Seed:        seed,
-		timeOfDay:   6000, // Start at noon
-		spawnPoint:  matrix.NewVec3(0, 70, 0),
-		running:     true,
+		Name:       name,
+		Seed:       seed,
+		timeOfDay:  6000, // Start at noon
+		spawnPoint: NewVec3(0, 70, 0),
+		running:    true,
 	}
 
 	// Create generator
@@ -75,7 +75,7 @@ func (w *World) SetSaveManager(sm *SaveManager) {
 }
 
 // Update updates the world state (called every frame)
-func (w *World) Update(deltaTime float64, playerPos matrix.Vec3) {
+func (w *World) Update(deltaTime float64, playerPos Vec3) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -83,8 +83,9 @@ func (w *World) Update(deltaTime float64, playerPos matrix.Vec3) {
 		return
 	}
 
-	// Update chunk manager based on player position
-	w.chunkManager.Update(playerPos)
+	// Convert Vec3 to types.Vec3 for chunk manager
+	typesPos := types.NewVec3(playerPos.X, playerPos.Y, playerPos.Z)
+	w.chunkManager.Update(typesPos)
 
 	// Update time of day (20 minutes per day)
 	w.timeOfDay += int(deltaTime * 20) // 20 ticks per second
@@ -121,14 +122,14 @@ func (w *World) IsDaytime() bool {
 }
 
 // GetSpawnPoint returns the world spawn point
-func (w *World) GetSpawnPoint() matrix.Vec3 {
+func (w *World) GetSpawnPoint() Vec3 {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	return w.spawnPoint
 }
 
 // SetSpawnPoint sets the world spawn point
-func (w *World) SetSpawnPoint(point matrix.Vec3) {
+func (w *World) SetSpawnPoint(point Vec3) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.spawnPoint = point
@@ -211,11 +212,11 @@ func (w *World) GetInfo() WorldInfo {
 
 	spawn := w.spawnPoint
 	return WorldInfo{
-		Name:       w.Name,
-		Seed:       w.Seed,
-		GameTime:   w.timeOfDay,
-		SpawnX:     spawn.X(),
-		SpawnY:     spawn.Y(),
-		SpawnZ:     spawn.Z(),
+		Name:     w.Name,
+		Seed:     w.Seed,
+		GameTime: w.timeOfDay,
+		SpawnX:   spawn.X,
+		SpawnY:   spawn.Y,
+		SpawnZ:   spawn.Z,
 	}
 }

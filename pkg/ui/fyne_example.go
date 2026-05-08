@@ -5,23 +5,20 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"kaijuengine.com/engine"
 )
 
 // FyneExample demonstrates how to use the new Fyne UI system
 type FyneExample struct {
 	app    fyne.App
 	window fyne.Window
-	host   *engine.Host
 }
 
 // NewFyneExample creates a new Fyne example
-func NewFyneExample(host *engine.Host) *FyneExample {
+func NewFyneExample() *FyneExample {
 	fyneApp := app.New()
 
 	example := &FyneExample{
-		app:  fyneApp,
-		host: host,
+		app: fyneApp,
 	}
 
 	return example

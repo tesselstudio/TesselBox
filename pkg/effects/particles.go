@@ -5,45 +5,36 @@ import (
 	"math/rand"
 	"time"
 
-	"kaijuengine.com/engine"
-	"kaijuengine.com/matrix"
-	"kaijuengine.com/rendering"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
 // Particle represents a single particle
 type Particle struct {
-	Position  matrix.Vec3
-	Velocity  matrix.Vec3
-	Color     matrix.Color
-	Size      float32
-	Life      float32
-	MaxLife   float32
-	Active    bool
+	Position types.Vec3
+	Velocity types.Vec3
+	Color    types.Color
+	Size     float32
+	Life     float32
+	MaxLife  float32
+	Active   bool
 }
 
 // ParticleSystem manages a collection of particles
 type ParticleSystem struct {
 	particles []Particle
-	host      *engine.Host
-	drawing   *rendering.Drawing
-	entity    *engine.Entity
 }
 
 // NewParticleSystem creates a new particle system
-func NewParticleSystem(host *engine.Host, maxParticles int) *ParticleSystem {
+func NewParticleSystem(maxParticles int) *ParticleSystem {
 	ps := &ParticleSystem{
 		particles: make([]Particle, maxParticles),
-		host:      host,
 	}
-
-	// Create entity for the particle system
-	ps.entity = engine.NewEntity(host.WorkGroup())
 
 	return ps
 }
 
 // SpawnBlockBreakParticles creates particles when a block is broken
-func (ps *ParticleSystem) SpawnBlockBreakParticles(pos matrix.Vec3, blockColor matrix.Color, count int) {
+func (ps *ParticleSystem) SpawnBlockBreakParticles(pos types.Vec3, blockColor types.Color, count int) {
 	for i := 0; i < count; i++ {
 		// Find inactive particle
 		for j := range ps.particles {
@@ -57,7 +48,7 @@ func (ps *ParticleSystem) SpawnBlockBreakParticles(pos matrix.Vec3, blockColor m
 
 				ps.particles[j] = Particle{
 					Position: pos,
-					Velocity: matrix.NewVec3(vx, vy, vz),
+					Velocity: types.NewVec3(vx, vy, vz),
 					Color:    blockColor,
 					Size:     float32(rand.Float32()*0.1 + 0.05),
 					Life:     1.0,
@@ -71,7 +62,7 @@ func (ps *ParticleSystem) SpawnBlockBreakParticles(pos matrix.Vec3, blockColor m
 }
 
 // SpawnFootstepParticles creates dust particles when player walks
-func (ps *ParticleSystem) SpawnFootstepParticles(pos matrix.Vec3, count int) {
+func (ps *ParticleSystem) SpawnFootstepParticles(pos types.Vec3, count int) {
 	for i := 0; i < count; i++ {
 		for j := range ps.particles {
 			if !ps.particles[j].Active {
@@ -82,8 +73,8 @@ func (ps *ParticleSystem) SpawnFootstepParticles(pos matrix.Vec3, count int) {
 
 				ps.particles[j] = Particle{
 					Position: pos,
-					Velocity: matrix.NewVec3(vx, vy, vz),
-					Color:    matrix.NewColor(0.7, 0.7, 0.6, 0.8),
+					Velocity: types.NewVec3(vx, vy, vz),
+					Color:    types.NewColor(178, 178, 153, 204),
 					Size:     float32(rand.Float32()*0.05 + 0.02),
 					Life:     0.5,
 					MaxLife:  0.5,
@@ -107,14 +98,14 @@ func (ps *ParticleSystem) Update(deltaTime float32) {
 		p := &ps.particles[i]
 
 		// Update position
-		p.Position = matrix.NewVec3(
-			p.Position.X()+p.Velocity.X()*deltaTime,
-			p.Position.Y()+p.Velocity.Y()*deltaTime,
-			p.Position.Z()+p.Velocity.Z()*deltaTime,
+		p.Position = types.NewVec3(
+			p.Position.X+p.Velocity.X*deltaTime,
+			p.Position.Y+p.Velocity.Y*deltaTime,
+			p.Position.Z+p.Velocity.Z*deltaTime,
 		)
 
 		// Apply gravity
-		p.Velocity.SetY(p.Velocity.Y() + gravity*deltaTime)
+		p.Velocity.Y = p.Velocity.Y + gravity*deltaTime
 
 		// Update life
 		p.Life -= deltaTime
@@ -144,21 +135,19 @@ func (ps *ParticleSystem) Clear() {
 
 // Destroy cleans up resources
 func (ps *ParticleSystem) Destroy() {
-	if ps.entity != nil {
-		ps.host.DestroyEntity(ps.entity)
-	}
+	// No-op for simplified implementation
 }
 
 // BlockBreakEffect is a one-shot effect for block breaking
 type BlockBreakEffect struct {
 	particles []Particle
-	origin    matrix.Vec3
-	color     matrix.Color
+	origin    types.Vec3
+	color     types.Color
 	finished  bool
 }
 
 // NewBlockBreakEffect creates a block break effect
-func NewBlockBreakEffect(pos matrix.Vec3, blockColor matrix.Color) *BlockBreakEffect {
+func NewBlockBreakEffect(pos types.Vec3, blockColor types.Color) *BlockBreakEffect {
 	effect := &BlockBreakEffect{
 		particles: make([]Particle, 0, 20),
 		origin:    pos,
@@ -176,7 +165,7 @@ func NewBlockBreakEffect(pos matrix.Vec3, blockColor matrix.Color) *BlockBreakEf
 
 		particle := Particle{
 			Position: pos,
-			Velocity: matrix.NewVec3(vx, vy, vz),
+			Velocity: types.NewVec3(vx, vy, vz),
 			Color:    blockColor,
 			Size:     float32(rand.Float32()*0.15 + 0.08),
 			Life:     0.8,
@@ -206,21 +195,20 @@ func (e *BlockBreakEffect) Update(deltaTime float32) bool {
 		p := &e.particles[i]
 
 		// Update position
-		p.Position = matrix.NewVec3(
-			p.Position.X()+p.Velocity.X()*deltaTime,
-			p.Position.Y()+p.Velocity.Y()*deltaTime,
-			p.Position.Z()+p.Velocity.Z()*deltaTime,
+		p.Position = types.NewVec3(
+			p.Position.X+p.Velocity.X*deltaTime,
+			p.Position.Y+p.Velocity.Y*deltaTime,
+			p.Position.Z+p.Velocity.Z*deltaTime,
 		)
 
 		// Apply gravity
-		p.Velocity.SetY(p.Velocity.Y() + gravity*deltaTime)
+		p.Velocity.Y = p.Velocity.Y + gravity*deltaTime
 
 		// Bounce on ground
-		if p.Position.Y() < e.origin.Y() {
-			p.Position.SetY(e.origin.Y())
-			p.Velocity.SetY(-p.Velocity.Y() * 0.5)
-			p.Velocity.SetX(p.Velocity.X() * 0.8)
-			p.Velocity.SetZ(p.Velocity.Z() * 0.8)
+		if p.Position.Y < e.origin.Y {
+			p.Position.Y = e.origin.Y
+			p.Velocity.Y = -p.Velocity.Y * 0.5
+			p.Velocity.Z = p.Velocity.Z * 0.8
 		}
 
 		// Update life
@@ -252,7 +240,6 @@ func (e *BlockBreakEffect) IsFinished() bool {
 // EffectManager manages all active effects
 type EffectManager struct {
 	effects []Effect
-	host    *engine.Host
 }
 
 // Effect interface for all effects
@@ -262,10 +249,9 @@ type Effect interface {
 }
 
 // NewEffectManager creates a new effect manager
-func NewEffectManager(host *engine.Host) *EffectManager {
+func NewEffectManager() *EffectManager {
 	return &EffectManager{
 		effects: make([]Effect, 0),
-		host:    host,
 	}
 }
 
@@ -275,7 +261,7 @@ func (em *EffectManager) AddEffect(effect Effect) {
 }
 
 // SpawnBlockBreak creates and adds a block break effect
-func (em *EffectManager) SpawnBlockBreak(pos matrix.Vec3, color matrix.Color) {
+func (em *EffectManager) SpawnBlockBreak(pos types.Vec3, color types.Color) {
 	effect := NewBlockBreakEffect(pos, color)
 	em.AddEffect(effect)
 }
