@@ -68,6 +68,44 @@ func Round(f Float) int {
 	return int(f + 0.5)
 }
 
+// BiomeType represents different biomes
+type BiomeType int
+
+const (
+	BiomePlains BiomeType = iota
+	BiomeForest
+	BiomeDesert
+	BiomeTundra
+	BiomeMountains
+	BiomeOcean
+	BiomeSwamp
+	BiomeJungle
+)
+
+// GetTemperatureModifier returns temperature modifier for biome
+func (bt BiomeType) GetTemperatureModifier() float32 {
+	switch bt {
+	case BiomePlains:
+		return 0.0
+	case BiomeForest:
+		return -2.0
+	case BiomeDesert:
+		return 10.0
+	case BiomeTundra:
+		return -15.0
+	case BiomeMountains:
+		return -8.0
+	case BiomeOcean:
+		return 0.0
+	case BiomeSwamp:
+		return 2.0
+	case BiomeJungle:
+		return 5.0
+	default:
+		return 0.0
+	}
+}
+
 // Color represents a simple RGBA color
 type Color struct {
 	R, G, B, A uint8

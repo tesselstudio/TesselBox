@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 
+	"github.com/joho/godotenv"
 	"github.com/tesselstudio/TesselBox/pkg/ui"
 )
 
@@ -17,6 +19,12 @@ var Version = "dev"
 func main() {
 	fmt.Println("🚀 TesselBox - Fyne UI Only")
 	fmt.Println("==========================")
+
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Warning: Could not load .env file")
+	}
 
 	// Load UI configuration
 	config := ui.LoadUIConfig()
@@ -33,8 +41,8 @@ func main() {
 	game := &TesselBoxGame{}
 	game.fyneUI = ui.NewModernFyneUI()
 
-	// Show login screen
-	game.fyneUI.ShowLogin()
+	// Show game selection directly (no authentication)
+	game.fyneUI.ShowGameSelect()
 
 	// Run the Fyne application
 	fmt.Println("🔄 Starting Fyne application...")

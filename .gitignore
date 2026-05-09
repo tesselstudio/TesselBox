@@ -38,6 +38,14 @@ Thumbs.db
 *.tmp
 *.log
 
+# Environment files with secrets
+.env
+.env.local
+.env.production
+*.key
+*.pem
+oauth_tokens.json
+
 # Game saves (optional - uncomment if you don't want to track saves)
 # saves/
 # worlds/

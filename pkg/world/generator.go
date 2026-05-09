@@ -3,8 +3,6 @@ package world
 import (
 	"math"
 	"sync"
-
-	"github.com/tesselstudio/TesselBox/pkg/survival"
 )
 
 // WorldGenerator generates terrain for the world using noise
@@ -67,7 +65,7 @@ func (wg *WorldGenerator) GenerateChunk(chunk *Chunk) {
 }
 
 // generateHeightmap generates a heightmap for the chunk
-func (wg *WorldGenerator) generateHeightmap(baseX, baseZ int, biome survival.BiomeType) [ChunkSize][ChunkSize]int {
+func (wg *WorldGenerator) generateHeightmap(baseX, baseZ int, biome BiomeType) [ChunkSize][ChunkSize]int {
 	var heightMap [ChunkSize][ChunkSize]int
 
 	for x := 0; x < ChunkSize; x++ {
@@ -95,7 +93,7 @@ func (wg *WorldGenerator) generateHeightmap(baseX, baseZ int, biome survival.Bio
 }
 
 // determineBlock determines what block type to place at a position
-func (wg *WorldGenerator) determineBlock(x, y, z int, groundHeight int, biome survival.BiomeType) BlockData {
+func (wg *WorldGenerator) determineBlock(x, y, z int, groundHeight int, biome BiomeType) BlockData {
 	// Water below sea level
 	if y <= wg.seaLevel && y > groundHeight {
 		return BlockData{ID: BlockIDWater}
@@ -112,9 +110,9 @@ func (wg *WorldGenerator) determineBlock(x, y, z int, groundHeight int, biome su
 	if depth == 0 {
 		// Surface block based on biome
 		switch biome {
-		case survival.BiomeDesert:
+		case BiomeDesert:
 			return BlockData{ID: BlockIDDirt} // Sand would be a new block type
-		case survival.BiomeTundra:
+		case BiomeTundra:
 			return BlockData{ID: BlockIDDirt} // Snow covered
 		default:
 			return BlockData{ID: BlockIDGrass}
@@ -127,7 +125,7 @@ func (wg *WorldGenerator) determineBlock(x, y, z int, groundHeight int, biome su
 }
 
 // determineBiome determines the biome at world coordinates
-func (wg *WorldGenerator) determineBiome(x, z int) survival.BiomeType {
+func (wg *WorldGenerator) determineBiome(x, z int) BiomeType {
 	worldX := float64(x)
 	worldZ := float64(z)
 
@@ -140,42 +138,42 @@ func (wg *WorldGenerator) determineBiome(x, z int) survival.BiomeType {
 	case temp > 0.5:
 		// Hot
 		if humidity < -0.2 {
-			return survival.BiomeDesert
+			return BiomeDesert
 		}
-		return survival.BiomeJungle
+		return BiomeJungle
 
 	case temp < -0.3:
 		// Cold
 		if humidity < 0 {
-			return survival.BiomeTundra
+			return BiomeTundra
 		}
-		return survival.BiomeMountains
+		return BiomeMountains
 
 	default:
 		// Temperate
 		if humidity > 0.3 {
-			return survival.BiomeForest
+			return BiomeForest
 		} else if humidity < -0.3 {
-			return survival.BiomePlains
+			return BiomePlains
 		}
-		return survival.BiomeForest
+		return BiomeForest
 	}
 }
 
 // getBiomeHeightRange returns base height and variation for a biome
-func (wg *WorldGenerator) getBiomeHeightRange(biome survival.BiomeType) (baseHeight int, heightVar int) {
+func (wg *WorldGenerator) getBiomeHeightRange(biome BiomeType) (baseHeight int, heightVar int) {
 	switch biome {
-	case survival.BiomePlains:
+	case BiomePlains:
 		return 64, 10
-	case survival.BiomeForest:
+	case BiomeForest:
 		return 68, 15
-	case survival.BiomeDesert:
+	case BiomeDesert:
 		return 62, 8
-	case survival.BiomeTundra:
+	case BiomeTundra:
 		return 70, 20
-	case survival.BiomeMountains:
+	case BiomeMountains:
 		return 80, 60
-	case survival.BiomeJungle:
+	case BiomeJungle:
 		return 65, 12
 	default:
 		return 64, 10
@@ -204,7 +202,7 @@ func (wg *WorldGenerator) generateCaves(chunk *Chunk, baseX, baseZ int) {
 }
 
 // generateFeatures generates trees, ores, and other features
-func (wg *WorldGenerator) generateFeatures(chunk *Chunk, baseX, baseZ int, biome survival.BiomeType) {
+func (wg *WorldGenerator) generateFeatures(chunk *Chunk, baseX, baseZ int, biome BiomeType) {
 	// Generate ores
 	wg.generateOres(chunk, baseX, baseZ)
 
@@ -252,15 +250,15 @@ func (wg *WorldGenerator) generateOreVein(chunk *Chunk, baseX, baseZ, minY, maxY
 }
 
 // generateTrees generates trees based on biome
-func (wg *WorldGenerator) generateTrees(chunk *Chunk, baseX, baseZ int, biome survival.BiomeType) {
+func (wg *WorldGenerator) generateTrees(chunk *Chunk, baseX, baseZ int, biome BiomeType) {
 	// Tree density based on biome
 	treeChance := 0.0
 	switch biome {
-	case survival.BiomeForest:
+	case BiomeForest:
 		treeChance = 0.1
-	case survival.BiomeJungle:
+	case BiomeJungle:
 		treeChance = 0.15
-	case survival.BiomePlains:
+	case BiomePlains:
 		treeChance = 0.02
 	default:
 		treeChance = 0.0

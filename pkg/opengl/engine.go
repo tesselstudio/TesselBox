@@ -2,11 +2,13 @@ package opengl
 
 import (
 	"log"
+	"math"
 	"runtime"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tesselstudio/TesselBox/pkg/world"
 )
 
 // Engine represents the OpenGL rendering engine
@@ -16,6 +18,8 @@ type Engine struct {
 	vao, vbo      uint32
 	camera        *Camera
 	initialized   bool
+	meshRenderer  *MeshRenderer
+	chunkMeshes   map[string]*ChunkMeshData
 }
 
 // Camera represents a 3D camera
@@ -77,6 +81,8 @@ func NewEngine(width, height int, title string) (*Engine, error) {
 			Near:        0.1,
 			Far:         100.0,
 		},
+		meshRenderer: NewMeshRenderer(),
+		chunkMeshes:  make(map[string]*ChunkMeshData),
 	}
 
 	// Initialize OpenGL resources
@@ -318,6 +324,42 @@ func (e *Engine) SetCameraPosition(pos mgl32.Vec3) {
 // SetCameraTarget updates the camera target
 func (e *Engine) SetCameraTarget(target mgl32.Vec3) {
 	e.camera.Target = target
+}
+
+// AddChunkMesh adds a chunk mesh to the rendering system
+func (e *Engine) AddChunkMesh(coord world.ChunkCoord, meshData *ChunkMeshData) {
+	if meshData == nil || meshData.IndexCount == 0 {
+		return
+	}
+	e.meshRenderer.AddMesh(coord, meshData)
+}
+
+// RemoveChunkMesh removes a chunk mesh from rendering
+func (e *Engine) RemoveChunkMesh(coord world.ChunkCoord) {
+	e.meshRenderer.RemoveMesh(coord)
+}
+
+// UpdateCameraFromPlayer updates camera position/rotation from player
+func (e *Engine) UpdateCameraFromPlayer(playerPos, playerRot mgl32.Vec3) {
+	// Camera is at player position + eye height, offset backwards for first-person view
+	eyeHeight := float32(1.62) // Player eye height
+	e.camera.Position = mgl32.Vec3{playerPos.X(), playerPos.Y() + eyeHeight, playerPos.Z()}
+	e.camera.Target = mgl32.Vec3{playerPos.X(), playerPos.Y() + eyeHeight, playerPos.Z()}
+
+	// Apply pitch and yaw rotation
+	pitchRad := float32(playerRot.X() * 3.14159 / 180.0)
+	yawRad := float32(playerRot.Y() * 3.14159 / 180.0)
+
+	// Calculate look direction
+	forwardX := float32(-math.Sin(float64(yawRad)) * math.Cos(float64(pitchRad)))
+	forwardY := float32(math.Sin(float64(pitchRad)))
+	forwardZ := float32(-math.Cos(float64(yawRad)) * math.Cos(float64(pitchRad)))
+
+	e.camera.Target = mgl32.Vec3{
+		e.camera.Position.X() + forwardX,
+		e.camera.Position.Y() + forwardY,
+		e.camera.Position.Z() + forwardZ,
+	}
 }
 
 func init() {
