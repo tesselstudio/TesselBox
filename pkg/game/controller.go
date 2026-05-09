@@ -838,3 +838,21 @@ func (c *Controller) OnChatMessage(playerID uint32, message string) {
 	fmt.Printf("[Player %d]: %s\n", playerID, message)
 	// TODO: Display in chat UI
 }
+
+// checkAutoSave checks if it's time to auto-save and saves if needed
+func (c *Controller) checkAutoSave(deltaTime float64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.world == nil || c.state != GameStatePlaying {
+		return
+	}
+
+	// Update last save time
+	now := time.Now()
+	if now.Sub(c.lastSaveTime) >= AutoSaveInterval {
+		c.saveGame()
+		c.lastSaveTime = now
+		fmt.Println("💾 Auto-save completed")
+	}
+}

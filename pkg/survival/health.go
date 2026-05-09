@@ -51,6 +51,27 @@ func (h *Health) GetHealthPercentage() float32 {
 	return h.current / h.max
 }
 
+// TakeDamage reduces health by the specified amount
+func (h *Health) TakeDamage(amount float32) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.invulnerable {
+		return
+	}
+
+	h.current -= amount
+	if h.current < 0 {
+		h.current = 0
+	}
+
+	h.lastDamage = time.Now()
+
+	// Set temporary invulnerability
+	h.invulnerable = true
+	h.invulnTime = 1 * time.Second
+}
+
 // IsDead returns true if health is 0 or below
 func (h *Health) IsDead() bool {
 	h.mu.RLock()
@@ -497,6 +518,12 @@ func NewPlayerStats(maxHealth, maxHunger, maxStamina float32) *PlayerStats {
 		Stamina:    NewStamina(maxStamina),
 		Experience: NewExperience(),
 	}
+}
+
+// AddEffect adds a temporary effect to the player (placeholder for future implementation)
+func (ps *PlayerStats) AddEffect(effect string, duration float32) {
+	// TODO: Implement effects system
+	// This would add temporary buffs/debuffs to the player
 }
 
 // Update updates all player stats (call every frame)

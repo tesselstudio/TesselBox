@@ -3,7 +3,6 @@ package world
 import (
 	"sync"
 
-	"github.com/tesselstudio/TesselBox/pkg/survival"
 	"github.com/tesselstudio/TesselBox/pkg/types"
 )
 
@@ -76,7 +75,7 @@ type Chunk struct {
 	mesh      *ChunkMesh
 
 	// Biome data
-	biome survival.BiomeType
+	biome BiomeType
 }
 
 // ChunkMesh holds the renderable mesh data for a chunk
@@ -95,7 +94,7 @@ func NewChunk(coord ChunkCoord) *Chunk {
 		blocks:    make([]BlockData, ChunkSize*ChunkHeight*ChunkSize),
 		modified:  true,
 		meshDirty: true,
-		biome:     survival.BiomePlains,
+		biome:     BiomePlains,
 	}
 }
 
@@ -219,14 +218,14 @@ func (c *Chunk) SetMesh(mesh *ChunkMesh) {
 }
 
 // GetBiome returns the chunk's biome
-func (c *Chunk) GetBiome() survival.BiomeType {
+func (c *Chunk) GetBiome() BiomeType {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.biome
 }
 
 // SetBiome sets the chunk's biome
-func (c *Chunk) SetBiome(biome survival.BiomeType) {
+func (c *Chunk) SetBiome(biome BiomeType) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.biome = biome

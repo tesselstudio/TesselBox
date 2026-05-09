@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-
-	"github.com/tesselstudio/TesselBox/pkg/survival"
 )
 
 // SaveManager handles saving and loading world data
@@ -243,7 +241,7 @@ func (sm *SaveManager) deserializeChunk(coord ChunkCoord, data []byte) (*Chunk, 
 
 	// Create chunk
 	chunk := NewChunk(chunkCoord)
-	chunk.SetBiome(survival.BiomeType(biome))
+	chunk.SetBiome(BiomeType(biome))
 
 	// Read heightmap
 	for i := 0; i < ChunkSize; i++ {

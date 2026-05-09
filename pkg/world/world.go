@@ -156,15 +156,6 @@ func (w *World) GetHeightmap(x, z int) int {
 	return int(chunk.GetHeightmap(localX, localZ))
 }
 
-// GetSafeSpawnHeight returns a safe Y height for spawning at x,z
-func (w *World) GetSafeSpawnHeight(x, z int) int {
-	height := w.GetHeightmap(x, z)
-	if height <= 0 {
-		return 70 // Default height
-	}
-	return int(height) + 2 // Spawn 2 blocks above ground
-}
-
 // Stop stops the world update loop
 func (w *World) Stop() {
 	w.mu.Lock()
