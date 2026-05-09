@@ -149,6 +149,13 @@ func (p *Player) Update(deltaTime float64) {
 		p.velocity.Y = 0
 	}
 
+	// Debug output every 60 frames (approximately 1 second)
+	var frameCount int
+	frameCount++
+	if frameCount%60 == 0 {
+		println("🔍 PLAYER DEBUG: Pos Y:", p.position.Y, "OnGround:", p.onGround, "Vel Y:", p.velocity.Y)
+	}
+
 	// Update survival stats
 	p.stats.Update(dt)
 }

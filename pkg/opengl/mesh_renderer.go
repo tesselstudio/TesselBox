@@ -37,6 +37,8 @@ func (mr *MeshRenderer) AddMesh(coord world.ChunkCoord, meshData *ChunkMeshData)
 	mr.mu.Lock()
 	defer mr.mu.Unlock()
 
+	println("🎨 Adding mesh for chunk", coord.X, coord.Z, "with", meshData.VertexCount, "vertices")
+
 	// Create VAO
 	var vao, vbo, ebo uint32
 	gl.GenVertexArrays(1, &vao)
@@ -74,6 +76,8 @@ func (mr *MeshRenderer) AddMesh(coord world.ChunkCoord, meshData *ChunkMeshData)
 		IndexCount:  meshData.IndexCount,
 		Generated:   true,
 	}
+
+	println("✅ Mesh added successfully for chunk", coord.X, coord.Z)
 }
 
 // RemoveMesh removes a chunk mesh from the renderer
@@ -116,13 +120,37 @@ func (mr *MeshRenderer) RenderMesh(coord world.ChunkCoord) {
 func (mr *MeshRenderer) RenderAllMeshes() {
 	mr.mu.RLock()
 	meshes := mr.meshes
+	totalMeshes := len(meshes)
 	mr.mu.RUnlock()
 
-	for _, mesh := range meshes {
+	meshCount := 0
+	for coord, mesh := range meshes {
 		if mesh != nil && mesh.Generated {
 			gl.BindVertexArray(mesh.VAO)
 			gl.DrawElements(gl.TRIANGLES, mesh.IndexCount, gl.UNSIGNED_INT, nil)
 			gl.BindVertexArray(0)
+			meshCount++
+
+			// Debug: Log first few meshes being rendered
+			if meshCount <= 3 {
+				println("🔍 DEBUG: Rendering chunk", coord.X, coord.Z, "with", mesh.IndexCount, "indices")
+			}
+		}
+	}
+
+	if meshCount > 0 {
+		println("🎨 Rendered", meshCount, "of", totalMeshes, "available chunk meshes")
+	} else {
+		println("❌ DEBUG: No meshes rendered! Available meshes:", totalMeshes)
+		if totalMeshes > 0 {
+			println("🔍 DEBUG: Meshes exist but Generated flag may be false")
+			mr.mu.RLock()
+			for coord, mesh := range meshes {
+				if mesh != nil {
+					println("  - Chunk", coord.X, coord.Z, "Generated:", mesh.Generated, "IndexCount:", mesh.IndexCount)
+				}
+			}
+			mr.mu.RUnlock()
 		}
 	}
 }

@@ -57,12 +57,12 @@ func (p *Player) resolveCollisions(newPos types.Vec3) types.Vec3 {
 	minZ := int(math.Floor(float64(newPos.Z - checkDistance)))
 	maxZ := int(math.Ceil(float64(newPos.Z + checkDistance)))
 
-	// Create player AABB at new position
+	// Create player AABB at new position (position is at feet level)
 	width := float32(0.3)
 	height := float32(1.8)
 	playerAABB := NewAABB(
-		types.NewVec3(newPos.X-width/2, newPos.Y-height/2, newPos.Z-width/2),
-		types.NewVec3(newPos.X+width/2, newPos.Y+height/2, newPos.Z+width/2),
+		types.NewVec3(newPos.X-width/2, newPos.Y, newPos.Z-width/2),
+		types.NewVec3(newPos.X+width/2, newPos.Y+height, newPos.Z+width/2),
 	)
 
 	// Check for collisions
@@ -88,34 +88,44 @@ func (p *Player) resolveCollisions(newPos types.Vec3) types.Vec3 {
 					dy := minOverlap(playerAABB.Min.Y, playerAABB.Max.Y, blockAABB.Min.Y, blockAABB.Max.Y)
 					dz := minOverlap(playerAABB.Min.Z, playerAABB.Max.Z, blockAABB.Min.Z, blockAABB.Max.Z)
 
-					// Resolve on the axis with least penetration
-					if math.Abs(float64(dx)) < math.Abs(float64(dy)) && math.Abs(float64(dx)) < math.Abs(float64(dz)) {
-						// X axis
-						if dx > 0 {
-							newPos.X = blockAABB.Max.X + width/2 + 0.001
-						} else {
-							newPos.X = blockAABB.Min.X - width/2 - 0.001
-						}
-						p.velocity.X = 0 // Stop velocity in that direction
-					} else if math.Abs(float64(dy)) < math.Abs(float64(dz)) {
-						// Y axis
-						if dy > 0 {
-							newPos.Y = blockAABB.Max.Y + height/2 + 0.001
-							p.velocity.Y = 0
-							p.onGround = true
-							p.jumping = false
-						} else {
-							newPos.Y = blockAABB.Min.Y - height/2 - 0.001
-							p.velocity.Y = 0 // Hit head
-						}
+					// Prioritize Y-axis resolution for ground collision to prevent sinking
+					if dy < 0 && math.Abs(float64(dy)) < 0.5 {
+						// Player is falling into block from above - push up immediately
+						newPos.Y = blockAABB.Max.Y + 0.001
+						p.velocity.Y = 0
+						p.onGround = true
+						p.jumping = false
+						println("🔍 COLLISION DEBUG: Pushed player up from block at Y:", blockAABB.Max.Y)
 					} else {
-						// Z axis
-						if dz > 0 {
-							newPos.Z = blockAABB.Max.Z + width/2 + 0.001
+						// Resolve on the axis with least penetration
+						if math.Abs(float64(dx)) < math.Abs(float64(dy)) && math.Abs(float64(dx)) < math.Abs(float64(dz)) {
+							// X axis
+							if dx > 0 {
+								newPos.X = blockAABB.Max.X + width/2 + 0.001
+							} else {
+								newPos.X = blockAABB.Min.X - width/2 - 0.001
+							}
+							p.velocity.X = 0 // Stop velocity in that direction
+						} else if math.Abs(float64(dy)) < math.Abs(float64(dz)) {
+							// Y axis
+							if dy > 0 {
+								newPos.Y = blockAABB.Max.Y + 0.001
+								p.velocity.Y = 0
+								p.onGround = true
+								p.jumping = false
+							} else {
+								newPos.Y = blockAABB.Min.Y - height - 0.001
+								p.velocity.Y = 0 // Hit head
+							}
 						} else {
-							newPos.Z = blockAABB.Min.Z - width/2 - 0.001
+							// Z axis
+							if dz > 0 {
+								newPos.Z = blockAABB.Max.Z + width/2 + 0.001
+							} else {
+								newPos.Z = blockAABB.Min.Z - width/2 - 0.001
+							}
+							p.velocity.Z = 0
 						}
-						p.velocity.Z = 0
 					}
 				}
 			}
@@ -161,11 +171,13 @@ func (p *Player) checkOnGround() bool {
 
 			block := p.worldRef.GetBlock(blockX, blockY, blockZ)
 			if block.ID != 0 { // Found solid ground
+				println("🔍 PHYSICS DEBUG: Found ground at Y:", blockY, "Player Y:", p.position.Y, "Block ID:", block.ID)
 				return true
 			}
 		}
 	}
 
+	println("🔍 PHYSICS DEBUG: No ground found below player at Y:", p.position.Y)
 	return false
 }
 

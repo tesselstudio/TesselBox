@@ -257,16 +257,27 @@ func (cm *ChunkManager) createChunk(coord ChunkCoord) *Chunk {
 
 // generationWorker processes chunk generation queue
 func (cm *ChunkManager) generationWorker() {
-	for coord := range cm.generateQueue {
-		cm.mu.RLock()
-		_, exists := cm.chunks[coord]
-		cm.mu.RUnlock()
+	println("🔄 Chunk generation worker started")
+	for {
+		select {
+		case coord, ok := <-cm.generateQueue:
+			if !ok {
+				// Channel closed, exit worker
+				return
+			}
 
-		if exists {
-			continue
+			cm.mu.RLock()
+			_, exists := cm.chunks[coord]
+			cm.mu.RUnlock()
+
+			if exists {
+				continue
+			}
+
+			println("🏗️ Generating chunk at", coord.X, coord.Z)
+			cm.createChunk(coord)
+			println("✅ Chunk generated at", coord.X, coord.Z)
 		}
-
-		cm.createChunk(coord)
 	}
 }
 
@@ -275,13 +286,16 @@ func (cm *ChunkManager) meshWorker() {
 	ticker := time.NewTicker(50 * time.Millisecond) // 20 mesh updates per second max
 	defer ticker.Stop()
 
-	for range ticker.C {
-		cm.rebuildDirtyMeshes()
+	for {
+		select {
+		case <-ticker.C:
+			cm.RebuildDirtyMeshes()
+		}
 	}
 }
 
-// rebuildDirtyMeshes rebuilds meshes for dirty chunks
-func (cm *ChunkManager) rebuildDirtyMeshes() {
+// RebuildDirtyMeshes rebuilds meshes for dirty chunks
+func (cm *ChunkManager) RebuildDirtyMeshes() {
 	cm.mu.RLock()
 	chunks := make([]*Chunk, 0, len(cm.chunks))
 	for _, chunk := range cm.chunks {
@@ -295,59 +309,73 @@ func (cm *ChunkManager) rebuildDirtyMeshes() {
 	for _, chunk := range chunks {
 		mesh := cm.buildChunkMesh(chunk)
 		chunk.SetMesh(mesh)
+
+		println("🎨 Rebuilt mesh for chunk", chunk.Coord.X, chunk.Coord.Z, "with", len(mesh.Vertices), "vertices")
 	}
+}
+
+// UpdateEngineWithMeshes passes chunk meshes to OpenGL engine for rendering
+func (cm *ChunkManager) UpdateEngineWithMeshes(engine interface{}) {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	println("🔍 DEBUG: UpdateEngineWithMeshes called with", len(cm.chunks), "chunks")
+
+	// Type assert to get engine methods
+	type EngineInterface interface {
+		AddChunkMesh(coord ChunkCoord, meshData interface{})
+		RemoveChunkMesh(coord ChunkCoord)
+	}
+
+	if engineInterface, ok := engine.(EngineInterface); ok {
+		meshesTransferred := 0
+		for coord, chunk := range cm.chunks {
+			if chunk.mesh != nil && len(chunk.mesh.InterleavedVertices) > 0 {
+				// Convert chunk mesh to engine format using interleaved vertices
+				meshData := map[string]interface{}{
+					"Vertices":    chunk.mesh.InterleavedVertices,
+					"Indices":     chunk.mesh.Indices,
+					"VertexCount": int32(len(chunk.mesh.InterleavedVertices) / 6), // 6 floats per vertex (pos + color)
+					"IndexCount":  int32(len(chunk.mesh.Indices)),
+				}
+
+				println("🔍 DEBUG: Transferring mesh for chunk", coord.X, coord.Z,
+					"- Vertices:", len(chunk.mesh.InterleavedVertices)/6,
+					"Indices:", len(chunk.mesh.Indices))
+
+				engineInterface.AddChunkMesh(coord, meshData)
+				meshesTransferred++
+			} else {
+				if chunk.mesh == nil {
+					println("🔍 DEBUG: Chunk", coord.X, coord.Z, "has no mesh")
+				} else {
+					println("🔍 DEBUG: Chunk", coord.X, coord.Z, "has empty mesh (", len(chunk.mesh.InterleavedVertices), "vertices)")
+				}
+			}
+		}
+
+		println("🔍 DEBUG: Transferred", meshesTransferred, "meshes to engine")
+	} else {
+		println("❌ DEBUG: Engine interface assertion failed!")
+	}
+}
+
+// convertToFloat32Slice converts []types.Vec3 to []float32
+func (cm *ChunkManager) convertToFloat32Slice(vertices []types.Vec3) []float32 {
+	result := make([]float32, len(vertices)*3)
+	for i, v := range vertices {
+		result[i*3] = float32(v.GetX())
+		result[i*3+1] = float32(v.GetY())
+		result[i*3+2] = float32(v.GetZ())
+	}
+	return result
 }
 
 // buildChunkMesh builds the renderable mesh for a chunk
 func (cm *ChunkManager) buildChunkMesh(chunk *Chunk) *ChunkMesh {
-	// Simplified mesh building - in production this would use greedy meshing
-	var vertices []types.Vec3
-	var indices []uint32
-	var normals []types.Vec3
-	var uvs []types.Vec2
-	var colors []types.Color
-
-	vertexOffset := 0
-
-	for x := 0; x < ChunkSize; x++ {
-		for y := 0; y < ChunkHeight; y++ {
-			for z := 0; z < ChunkSize; z++ {
-				block := chunk.GetBlock(x, y, z)
-				if block.IsAir() {
-					continue
-				}
-
-				// Check if block is visible (has air neighbor)
-				if !cm.isBlockVisible(chunk, x, y, z) {
-					continue
-				}
-
-				// Generate mesh for this block
-				blockVertices, blockIndices, blockNormals, blockUVs, blockColors :=
-					cm.generateBlockMesh(x, y, z, block)
-
-				// Adjust indices
-				for _, idx := range blockIndices {
-					indices = append(indices, uint32(vertexOffset)+idx)
-				}
-
-				vertices = append(vertices, blockVertices...)
-				normals = append(normals, blockNormals...)
-				uvs = append(uvs, blockUVs...)
-				colors = append(colors, blockColors...)
-
-				vertexOffset += len(blockVertices)
-			}
-		}
-	}
-
-	return &ChunkMesh{
-		Vertices: vertices,
-		Indices:  indices,
-		Normals:  normals,
-		UVs:      uvs,
-		Colors:   colors,
-	}
+	// Use the ChunkMeshBuilder which properly handles hexagonal prisms
+	builder := NewChunkMeshBuilder(chunk)
+	return builder.BuildMesh()
 }
 
 // isBlockVisible checks if a block has any exposed faces
@@ -462,4 +490,22 @@ func (cm *ChunkManager) SetViewDistance(distance int) {
 
 	cm.loadChunksAroundPlayer()
 	cm.unloadDistantChunks()
+}
+
+// InitializeChunkLoading triggers initial chunk loading around the given position
+func (cm *ChunkManager) InitializeChunkLoading(playerPos types.Vec3) {
+	// Convert player position to chunk coordinate
+	playerChunkX := int(math.Floor(float64(playerPos.GetX()) / float64(ChunkSize)))
+	playerChunkZ := int(math.Floor(float64(playerPos.GetZ()) / float64(ChunkSize)))
+
+	println("📍 Initializing chunk loading around player chunk", playerChunkX, playerChunkZ)
+
+	cm.mu.Lock()
+	cm.playerChunk = ChunkCoord{X: playerChunkX, Z: playerChunkZ}
+	cm.mu.Unlock()
+
+	// Load initial chunks
+	println("📦 Loading initial chunks...")
+	cm.loadChunksAroundPlayer()
+	println("✅ Initial chunk loading completed")
 }
