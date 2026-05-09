@@ -80,11 +80,12 @@ type Chunk struct {
 
 // ChunkMesh holds the renderable mesh data for a chunk
 type ChunkMesh struct {
-	Vertices []types.Vec3
-	Indices  []uint32
-	Normals  []types.Vec3
-	UVs      []types.Vec2
-	Colors   []types.Color
+	Vertices            []types.Vec3
+	Indices             []uint32
+	Normals             []types.Vec3
+	UVs                 []types.Vec2
+	Colors              []types.Color
+	InterleavedVertices []float32 // Position + Color interleaved for OpenGL
 }
 
 // NewChunk creates a new empty chunk

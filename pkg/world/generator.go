@@ -39,12 +39,16 @@ func (wg *WorldGenerator) GenerateChunk(chunk *Chunk) {
 	baseX := chunk.Coord.X * ChunkSize
 	baseZ := chunk.Coord.Z * ChunkSize
 
+	println("🌍 Generating terrain for chunk at", baseX, baseZ)
+
 	// Generate biome for this chunk
 	biome := wg.determineBiome(baseX+ChunkSize/2, baseZ+ChunkSize/2)
+	println("🌱 Biome determined:", biome)
 	chunk.SetBiome(biome)
 
 	// Generate terrain heightmap
 	heightMap := wg.generateHeightmap(baseX, baseZ, biome)
+	println("⛰️ Heightmap generated, max height:", heightMap[0][0])
 
 	// Fill blocks based on heightmap
 	for x := 0; x < ChunkSize; x++ {
@@ -331,7 +335,7 @@ func (sn *SimplexNoise) Noise2D(x, y float64) float64 {
 
 	// Hash function
 	hash := func(x, y int) int {
-		return sn.perm[(x&255)+sn.perm[(y&255)&255]]
+		return sn.perm[(x&255)+sn.perm[(y&255)]]
 	}
 
 	// Get corner values

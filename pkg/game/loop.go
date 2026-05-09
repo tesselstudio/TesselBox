@@ -158,7 +158,7 @@ func (gl *GameLoop) render() {
 	engine.BeginFrame()
 
 	// Render game
-	engine.Render()
+	engine.Render(controller)
 
 	// End frame
 	engine.EndFrame()

@@ -8,12 +8,12 @@ import (
 
 // RaycastHit represents a raycast hit result
 type RaycastHit struct {
-	Hit          bool
-	BlockPos     Vec3
-	FaceNormal   Vec3
-	Distance     float32
-	BlockID      BlockID
-	ChunkCoord   ChunkCoord
+	Hit        bool
+	BlockPos   Vec3
+	FaceNormal Vec3
+	Distance   float32
+	BlockID    BlockID
+	ChunkCoord ChunkCoord
 }
 
 // Raycast casts a ray through the world and returns the hit block
@@ -91,16 +91,37 @@ func (w *World) Raycast(origin, direction types.Vec3, maxDistance float32) *Rayc
 
 // GetSafeSpawnHeight returns a safe Y position to spawn at given X, Z
 func (w *World) GetSafeSpawnHeight(x, z int) int {
+	// Ensure the chunk at spawn position is loaded and generated
+	chunk := w.chunkManager.GetChunkByWorld(x, z)
+	if chunk == nil {
+		// Force load and generate the chunk
+		coord, _, _, _ := WorldToLocal(x, 0, z)
+		chunk = w.chunkManager.createChunk(coord)
+	}
+
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 
-	// Start from top and work down
+	// Start from top and work down to find ground
+	groundY := -1
 	for y := 255; y >= 0; y-- {
 		block := w.GetBlock(x, y, z)
 		if block.ID != 0 { // Found solid block
-			return y + 2 // Spawn 2 blocks above
+			groundY = y
+			break
 		}
 	}
 
-	return 70 // Default height if nothing found
+	if groundY == -1 {
+		return 70 // Default height if nothing found
+	}
+
+	// Spawn player high in sky and let them fall naturally
+	skyY := 200 // High spawn point in sky
+
+	println("🔍 SPAWN DEBUG: Ground Y:", groundY, "Spawning at sky Y:", skyY)
+
+	// No need to check for obstructions - player will fall through air
+	println("🔍 SPAWN DEBUG: Final sky spawn Y:", skyY, "Position (", x, ",", skyY, ",", z, ")")
+	return skyY
 }

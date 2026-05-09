@@ -11,34 +11,45 @@ type InputHandler struct {
 	mu sync.RWMutex
 
 	// Current input state
-	keys        map[glfw.Key]bool
+	keys         map[glfw.Key]bool
 	mouseButtons map[glfw.MouseButton]bool
-	mouseDX     float64
-	mouseDY     float64
-	lastMouseX  float64
-	lastMouseY  float64
+	mouseDX      float64
+	mouseDY      float64
+	lastMouseX   float64
+	lastMouseY   float64
 
 	// Window reference
 	window *glfw.Window
 
 	// Input callbacks
-	onKeyCallback    func(key glfw.Key, action glfw.Action)
-	onMouseCallback  func(button glfw.MouseButton, action glfw.Action)
+	onKeyCallback       func(key glfw.Key, action glfw.Action)
+	onMouseCallback     func(button glfw.MouseButton, action glfw.Action)
 	onMouseMoveCallback func(x, y float64)
+
+	// Additional input state
+	hotbarSlot       int
+	mouseSensitivity float32
+	mouseLocked      bool
+	firstMouse       bool
 }
 
 // NewInputHandler creates a new input handler
 func NewInputHandler(window *glfw.Window) *InputHandler {
 	ih := &InputHandler{
-		window:       window,
-		keys:         make(map[glfw.Key]bool),
-		mouseButtons: make(map[glfw.MouseButton]bool),
+		window:           window,
+		keys:             make(map[glfw.Key]bool),
+		mouseButtons:     make(map[glfw.MouseButton]bool),
+		hotbarSlot:       0,
+		mouseSensitivity: 0.1,
+		mouseLocked:      false,
+		firstMouse:       true,
 	}
 
 	// Set up GLFW callbacks
 	window.SetKeyCallback(ih.handleKeyCallback)
 	window.SetMouseButtonCallback(ih.handleMouseCallback)
 	window.SetCursorPosCallback(ih.handleMouseMoveCallback)
+	window.SetScrollCallback(ih.handleScrollCallback)
 
 	return ih
 }
@@ -82,6 +93,13 @@ func (ih *InputHandler) handleMouseMoveCallback(window *glfw.Window, xpos, ypos 
 	ih.mu.Lock()
 	defer ih.mu.Unlock()
 
+	if ih.firstMouse {
+		ih.lastMouseX = xpos
+		ih.lastMouseY = ypos
+		ih.firstMouse = false
+		return
+	}
+
 	ih.mouseDX = xpos - ih.lastMouseX
 	ih.mouseDY = ypos - ih.lastMouseY
 	ih.lastMouseX = xpos
@@ -89,6 +107,21 @@ func (ih *InputHandler) handleMouseMoveCallback(window *glfw.Window, xpos, ypos 
 
 	if ih.onMouseMoveCallback != nil {
 		ih.onMouseMoveCallback(xpos, ypos)
+	}
+}
+
+// handleScrollCallback is called by GLFW on mouse scroll
+func (ih *InputHandler) handleScrollCallback(window *glfw.Window, xoffset, yoffset float64) {
+	ih.mu.Lock()
+	defer ih.mu.Unlock()
+
+	// Handle hotbar scrolling
+	if yoffset > 0 {
+		// Scroll up - previous slot
+		ih.hotbarSlot = (ih.hotbarSlot - 1 + 9) % 9
+	} else if yoffset < 0 {
+		// Scroll down - next slot
+		ih.hotbarSlot = (ih.hotbarSlot + 1) % 9
 	}
 }
 
@@ -144,15 +177,24 @@ func (ih *InputHandler) SetMouseMoveCallback(callback func(x, y float64)) {
 
 // LockMouse locks the cursor to the window
 func (ih *InputHandler) LockMouse() {
+	ih.mu.Lock()
+	defer ih.mu.Unlock()
+
 	if ih.window != nil {
 		ih.window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+		ih.mouseLocked = true
+		ih.firstMouse = true // Reset first mouse to avoid jumps
 	}
 }
 
 // UnlockMouse unlocks the cursor
 func (ih *InputHandler) UnlockMouse() {
+	ih.mu.Lock()
+	defer ih.mu.Unlock()
+
 	if ih.window != nil {
 		ih.window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
+		ih.mouseLocked = false
 	}
 }
 
@@ -189,7 +231,10 @@ func (ih *InputHandler) ProcessInput(controller *Controller) {
 	input.Attack = ih.mouseButtons[glfw.MouseButtonLeft]
 	input.Use = ih.mouseButtons[glfw.MouseButtonRight]
 
+	// Hotbar
+	input.HotbarSlot = ih.hotbarSlot
+
 	// Mouse
-	input.MouseDX = float32(ih.mouseDX)
-	input.MouseDY = float32(ih.mouseDY)
+	input.MouseDX = float32(ih.mouseDX * float64(ih.mouseSensitivity))
+	input.MouseDY = float32(ih.mouseDY * float64(ih.mouseSensitivity))
 }

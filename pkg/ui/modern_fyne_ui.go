@@ -200,60 +200,87 @@ func (f *ModernFyneUI) startActualGame(currentWindow fyne.Window) {
 	// Close the current Fyne window
 	currentWindow.Close()
 
-	// Initialize game systems in a separate goroutine to avoid blocking UI
-	go func() {
-		// Create OpenGL engine
-		engine, err := opengl.NewEngine(1024, 768, "TesselBox - Single Player")
-		if err != nil {
-			println("❌ Failed to create OpenGL engine:", err.Error())
-			return
-		}
-		defer engine.Cleanup()
+	// Initialize game systems on main thread (OpenGL requires main thread)
+	println("🎮 Starting game initialization...")
 
-		// Create world
-		gameWorld := world.NewWorld("TesselBox World", 12345) // Fixed seed for reproducibility
+	// Create world first (this can be done in background)
+	gameWorld := world.NewWorld("TesselBox World", 12345) // Fixed seed for reproducibility
 
-		// Create player
-		player := player.NewPlayer(gameWorld)
+	// Initialize chunk loading around spawn point first
+	spawn := gameWorld.GetSpawnPoint()
+	tempPlayerPos := types.NewVec3(float32(spawn.X), 70.0, float32(spawn.Z))
+	gameWorld.GetChunkManager().InitializeChunkLoading(tempPlayerPos)
 
-		// Set player at spawn point
-		spawn := gameWorld.GetSpawnPoint()
-		safeY := gameWorld.GetSafeSpawnHeight(int(spawn.X), int(spawn.Z))
-		player.SetPosition(types.NewVec3(float32(spawn.X), float32(safeY), float32(spawn.Z)))
+	// Wait for chunks to generate (longer wait like in the test)
+	println("⏳ Waiting for chunk generation...")
+	time.Sleep(2 * time.Second)
 
-		println("🎮 Game initialized successfully!")
-		println("🌍 World: TesselBox World (Seed: 12345)")
-		println("👤 Player position: X=", spawn.X, " Y=", safeY, " Z=", spawn.Z)
+	// Check if chunks were generated
+	stats := gameWorld.GetChunkManager().GetStats()
+	println("📊 Generated", stats.LoadedChunks, "chunks")
 
-		// Game loop
-		lastTime := time.Now()
-		for !engine.ShouldClose() {
-			// Calculate delta time
-			currentTime := time.Now()
-			deltaTime := currentTime.Sub(lastTime).Seconds()
-			lastTime = currentTime
+	if stats.LoadedChunks == 0 {
+		println("❌ No chunks were generated!")
+		return
+	}
 
-			// Update game logic
-			player.Update(deltaTime)
-			gameWorld.Update(deltaTime, world.NewVec3(0, 0, 0))
+	// Now find safe spawn height in generated terrain
+	safeY := gameWorld.GetSafeSpawnHeight(int(spawn.X), int(spawn.Z))
+	playerPos := types.NewVec3(float32(spawn.X), float32(safeY), float32(spawn.Z))
 
-			// Update camera from player
-			playerPos := player.GetPosition()
-			playerRot := player.GetRotation()
-			engine.UpdateCameraFromPlayer(
-				mgl32.Vec3{playerPos.X, playerPos.Y, playerPos.Z},
-				mgl32.Vec3{playerRot.X, playerRot.Y, playerRot.Z},
-			)
+	// Create player
+	player := player.NewPlayer(gameWorld)
+	player.SetPosition(playerPos)
 
-			// Render
-			engine.BeginFrame()
-			engine.Render()
-			engine.EndFrame()
+	// Create OpenGL engine on main thread
+	engine, err := opengl.NewEngine(1024, 768, "TesselBox - Single Player")
+	if err != nil {
+		println("❌ Failed to create OpenGL engine:", err.Error())
+		return
+	}
+	defer engine.Cleanup()
 
-			// Handle events
-			engine.PollEvents()
-		}
+	println("🎮 Game initialized successfully!")
+	println("🌍 World: TesselBox World (Seed: 12345)")
+	println("👤 Player position: X=", spawn.X, " Y=", safeY, " Z=", spawn.Z)
 
-		println("🎮 Game ended")
-	}()
+	// Test mesh generation
+	println("🎨 Testing mesh generation...")
+	gameWorld.GetChunkManager().UpdateEngineWithMeshes(engine)
+
+	println("🔄 Starting game loop...")
+
+	// Game loop - run on main thread
+	lastTime := time.Now()
+	for !engine.ShouldClose() {
+		// Calculate delta time
+		currentTime := time.Now()
+		deltaTime := currentTime.Sub(lastTime).Seconds()
+		lastTime = currentTime
+
+		// Update game logic
+		player.Update(deltaTime)
+		playerPos := player.GetPosition()
+		gameWorld.Update(deltaTime, world.NewVec3(playerPos.X, playerPos.Y, playerPos.Z))
+
+		// Update engine with chunk meshes for rendering
+		gameWorld.GetChunkManager().UpdateEngineWithMeshes(engine)
+
+		// Update camera from player
+		playerRot := player.GetRotation()
+		engine.UpdateCameraFromPlayer(
+			mgl32.Vec3{playerPos.X, playerPos.Y, playerPos.Z},
+			mgl32.Vec3{playerRot.X, playerRot.Y, playerRot.Z},
+		)
+
+		// Render
+		engine.BeginFrame()
+		engine.Render(nil) // No controller available in this context
+		engine.EndFrame()
+
+		// Handle events
+		engine.PollEvents()
+	}
+
+	println("🎮 Game ended")
 }
