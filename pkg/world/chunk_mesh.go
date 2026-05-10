@@ -1,6 +1,8 @@
 package world
 
 import (
+	"math"
+
 	"github.com/tesselstudio/TesselBox/pkg/blocks"
 	"github.com/tesselstudio/TesselBox/pkg/types"
 )
@@ -48,9 +50,6 @@ func (b *ChunkMeshBuilder) BuildMesh() *ChunkMesh {
 				worldY := float32(y)
 				worldZ := float32(b.chunk.Coord.Z*ChunkSize + z)
 
-				// Get block color
-				color := b.getBlockColor(block.ID)
-
 				// Generate mesh for this block
 				prism := blocks.NewHexPrism(
 					types.NewVec3(worldX, worldY, worldZ),
@@ -58,28 +57,25 @@ func (b *ChunkMeshBuilder) BuildMesh() *ChunkMesh {
 					1.0, // height
 				)
 
-				// Add prism geometry
-				blockVerts := prism.GenerateVertices()
-				blockIndices := prism.GenerateIndices()
-				blockNormals := prism.GenerateNormals()
-				blockUVs := prism.GenerateUVCoordinates()
+				// Generate face-based colors for better 3D visualization
+				faceColors := b.generateFaceColors(block.ID)
 
 				// Append vertices
+				blockVerts := prism.GenerateVertices()
 				vertices = append(vertices, blockVerts...)
 
-				// Append indices with offset
-				for _, idx := range blockIndices {
-					indices = append(indices, idx+indexOffset)
+				// Append indices
+				blockIndices := prism.GenerateIndices()
+				for _, index := range blockIndices {
+					indices = append(indices, uint32(len(vertices))+index)
 				}
 
-				// Append normals and UVs
+				// Append normals
+				blockNormals := prism.GenerateNormals()
 				normals = append(normals, blockNormals...)
-				uvs = append(uvs, blockUVs...)
 
-				// Append colors for each vertex
-				for i := 0; i < len(blockVerts); i++ {
-					colors = append(colors, color)
-				}
+				// Append face-specific colors
+				colors = append(colors, faceColors...)
 
 				// Update index offset for next block
 				indexOffset += uint32(len(blockVerts))
@@ -142,24 +138,116 @@ func (b *ChunkMeshBuilder) isBlockVisible(x, y, z int) bool {
 	return false
 }
 
+// generateFaceColors creates different colors for each face of a block
+func (b *ChunkMeshBuilder) generateFaceColors(id BlockID) []types.Color {
+	colors := make([]types.Color, 24) // 24 vertices for hexagonal prism
+
+	// Base color for this block type
+	baseColor := b.getBlockColor(id)
+
+	// Create variations for different faces
+	// Top face (vertices 0-5) - lighter
+	topColor := lightenColor(baseColor, 0.3)
+	for i := 0; i < 6; i++ {
+		colors[i] = topColor
+	}
+
+	// Bottom face (vertices 6-11) - darker
+	bottomColor := darkenColor(baseColor, 0.3)
+	for i := 6; i < 12; i++ {
+		colors[i] = bottomColor
+	}
+
+	// Side faces (vertices 12-23) - different shades for each side
+	for i := 0; i < 6; i++ {
+		// Each side has 2 vertices, create alternating pattern
+		sideColor1 := adjustHue(baseColor, float32(i)*30)    // Different hue for each side
+		sideColor2 := adjustHue(baseColor, float32(i)*30+15) // Slight variation
+
+		colors[12+i*2] = sideColor1   // First vertex of side
+		colors[12+i*2+1] = sideColor2 // Second vertex of side
+	}
+
+	return colors
+}
+
+// lightenColor makes a color lighter
+func lightenColor(color types.Color, factor float32) types.Color {
+	return types.NewColor(
+		uint8(float32(color.R)+(255-float32(color.R))*factor),
+		uint8(float32(color.G)+(255-float32(color.G))*factor),
+		uint8(float32(color.B)+(255-float32(color.B))*factor),
+		color.A,
+	)
+}
+
+// darkenColor makes a color darker
+func darkenColor(color types.Color, factor float32) types.Color {
+	return types.NewColor(
+		uint8(float32(color.R)*(1-factor)),
+		uint8(float32(color.G)*(1-factor)),
+		uint8(float32(color.B)*(1-factor)),
+		color.A,
+	)
+}
+
+// adjustHue adjusts the hue of a color for variety
+func adjustHue(baseColor types.Color, hueShift float32) types.Color {
+	// Simple hue adjustment by shifting RGB values
+	r := float32(baseColor.R)
+	g := float32(baseColor.G)
+	b := float32(baseColor.B)
+
+	// Apply hue shift (simplified)
+	shiftR := float32(math.Cos(float64(hueShift))) * 0.5
+	shiftG := float32(math.Cos(float64(hueShift)-2.094)) * 0.5
+	shiftB := float32(math.Cos(float64(hueShift)+2.094)) * 0.5
+
+	newR := r + (shiftR-0.5)*60
+	newG := g + (shiftG-0.5)*60
+	newB := b + (shiftB-0.5)*60
+
+	// Clamp values
+	if newR > 255 {
+		newR = 255
+	}
+	if newG > 255 {
+		newG = 255
+	}
+	if newB > 255 {
+		newB = 255
+	}
+	if newR < 0 {
+		newR = 0
+	}
+	if newG < 0 {
+		newG = 0
+	}
+	if newB < 0 {
+		newB = 0
+	}
+
+	return types.NewColor(uint8(newR), uint8(newG), uint8(newB), baseColor.A)
+}
+
 // getBlockColor returns the color for a block type
 func (b *ChunkMeshBuilder) getBlockColor(id BlockID) types.Color {
-	// Make all terrain blocks green for visualization
+	// Use different colors for different block types for better visualization
 	switch id {
 	case BlockIDStone:
-		return types.NewColor(0, 255, 0, 255) // Green stone
+		return types.NewColor(128, 128, 128, 255) // Gray stone
 	case BlockIDDirt:
-		return types.NewColor(0, 200, 0, 255) // Green dirt
+		return types.NewColor(139, 90, 43, 255) // Brown dirt
 	case BlockIDGrass:
-		return types.NewColor(0, 255, 0, 255) // Green grass
+		return types.NewColor(124, 252, 0, 255) // Green grass
 	case BlockIDWood:
-		return types.NewColor(0, 150, 0, 255) // Green wood
+		return types.NewColor(160, 82, 45, 255) // Brown wood
 	case BlockIDGlass:
-		return types.NewColor(0, 255, 0, 128) // Green glass
+		return types.NewColor(200, 200, 255, 180) // Light blue glass
 	case BlockIDWater:
-		return types.NewColor(0, 100, 200, 180) // Blue-green water
+		return types.NewColor(64, 164, 223, 180) // Blue water
 	default:
-		return types.NewColor(0, 255, 0, 255) // Green default
+		return types.NewColor(255, 255, 255, 255) // White default
 	}
 }
 

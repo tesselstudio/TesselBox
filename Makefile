@@ -7,9 +7,48 @@ CMD_PATH=./cmd/main.go
 # Build flags
 LDFLAGS=-s -w
 
-.PHONY: all clean build-linux build-windows build-macos build-android build-ios
+.PHONY: all clean build build-local build-linux build-windows build-macos build-android build-ios
 
-all: clean build-linux build-windows build-macos
+# Detect OS and architecture for local builds
+UNAME_OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
+UNAME_ARCH := $(shell uname -m)
+
+# Map OS names
+ifeq ($(UNAME_OS),linux)
+	LOCAL_OS := linux
+	LOCAL_EXT :=
+else ifeq ($(UNAME_OS),darwin)
+	LOCAL_OS := darwin
+	LOCAL_EXT :=
+else ifeq ($(findstring mingw,$(UNAME_OS)),mingw)
+	LOCAL_OS := windows
+	LOCAL_EXT := .exe
+else ifeq ($(findstring msys,$(UNAME_OS)),msys)
+	LOCAL_OS := windows
+	LOCAL_EXT := .exe
+else
+	LOCAL_OS := linux
+	LOCAL_EXT :=
+endif
+
+# Map architecture
+ifeq ($(UNAME_ARCH),x86_64)
+	LOCAL_ARCH := amd64
+else ifeq ($(UNAME_ARCH),amd64)
+	LOCAL_ARCH := amd64
+else ifeq ($(UNAME_ARCH),arm64)
+	LOCAL_ARCH := arm64
+else ifeq ($(UNAME_ARCH),aarch64)
+	LOCAL_ARCH := arm64
+else
+	LOCAL_ARCH := amd64
+endif
+
+LOCAL_BINARY := $(BINARY_NAME)-$(LOCAL_OS)-$(LOCAL_ARCH)$(LOCAL_EXT)
+
+# Default: build for current platform only
+# Note: Cross-compilation requires CGO setup for OpenGL/GLFW
+all: clean build-local
 
 # Create dist directory
 $(DIST_DIR):
@@ -18,6 +57,13 @@ $(DIST_DIR):
 clean:
 	rm -rf $(DIST_DIR)
 	mkdir -p $(DIST_DIR)
+
+# Build for local OS/architecture (allows CGO to work properly)
+build: build-local
+
+build-local: $(DIST_DIR)
+	go build -ldflags="$(LDFLAGS)" -o $(DIST_DIR)/$(LOCAL_BINARY) $(CMD_PATH)
+	@echo "Built for local platform: $(LOCAL_OS)/$(LOCAL_ARCH) -> $(LOCAL_BINARY)"
 
 # Linux builds
 build-linux: build-linux-amd64
@@ -63,9 +109,9 @@ build-ios:
 	gomobile build -target=ios -o $(DIST_DIR)/$(BINARY_NAME).app $(CMD_PATH)
 	@echo "Built iOS App"
 
-# Run locally
+# Run locally (unified launcher with Fyne GUI + OpenGL integration)
 run:
-	go run ./launch_game.go
+	go run ./cmd/main.go
 
 # Run as server
 run-server:
@@ -101,12 +147,6 @@ lint:
 # All checks
 check: fmt vet lint test
 	@echo "All checks passed!"
-
-# Clean
-clean:
-	rm -rf dist/
-	rm -f coverage.out coverage.html
-	rm -f tesselbox tesselbox-*
 
 # Dependencies
 deps:

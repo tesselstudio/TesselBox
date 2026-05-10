@@ -124,6 +124,14 @@ func (gl *GameLoop) update() {
 		return
 	}
 
+	// Update game controller (includes camera switching and input processing)
+	controller.Update()
+
+	// Don't update game logic if paused
+	if controller.IsPaused() {
+		return
+	}
+
 	// Update player
 	player := controller.GetPlayer()
 	if player != nil {

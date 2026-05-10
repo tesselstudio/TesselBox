@@ -84,13 +84,14 @@ make build-all
 
 |Key|Action|
 |-----|--------|
-|WASD|Move|
+|WASD|Move (works in all camera modes)|
 |Space|Jump|
 |Mouse|Look around|
 |Left Click|Break block|
 |Right Click|Place block|
 |E|Open inventory|
 |C|Open crafting|
+|Right Ctrl/C|Cycle camera perspective (1st → 2nd → 3rd person)|
 |Q|Drop item|
 |ESC|Pause menu|
 |F3|Toggle debug info|

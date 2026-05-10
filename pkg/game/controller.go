@@ -37,6 +37,27 @@ const (
 	GameStateSettings
 )
 
+// CameraManagerInterface defines the interface for camera management
+type CameraManagerInterface interface {
+	UpdateFromPlayer(playerPos types.Vec3, playerYaw, playerPitch float32)
+	GetViewMatrix() mgl32.Mat4
+	GetProjectionMatrix() mgl32.Mat4
+	GetPosition() mgl32.Vec3
+	GetFront() mgl32.Vec3
+	GetRight() mgl32.Vec3
+	GetUp() mgl32.Vec3
+	SetAspectRatio(width, height int)
+	SetFOV(fov float32)
+	SetClipPlanes(near, far float32)
+	CycleMode()
+	GetMode() interface{ String() string }
+}
+
+// CameraModeInterface defines the interface for camera modes
+type CameraModeInterface interface {
+	String() string
+}
+
 // Controller manages the game state and logic
 type Controller struct {
 	mu sync.RWMutex
@@ -57,9 +78,11 @@ type Controller struct {
 	input *InputState
 
 	// Camera control
+	cameraManager    CameraManagerInterface
 	cameraYaw        float32
 	cameraPitch      float32
 	mouseSensitivity float32
+	lastCameraSwitch time.Time
 
 	// Chunk renderers
 	chunkRenderers map[world.ChunkCoord]*ChunkRenderer
@@ -85,20 +108,22 @@ type Controller struct {
 
 // InputState tracks current input state
 type InputState struct {
-	Forward   bool
-	Backward  bool
-	Left      bool
-	Right     bool
-	Jump      bool
-	Sprint    bool
-	Sneak     bool
-	Attack    bool
-	Use       bool
-	Inventory bool
-	Pause     bool
-	Debug     bool
-	Drop      bool
-	Crafting  bool
+	Forward      bool
+	Backward     bool
+	Left         bool
+	Right        bool
+	Jump         bool
+	Sprint       bool
+	Sneak        bool
+	Attack       bool
+	Use          bool
+	Inventory    bool
+	Pause        bool
+	Debug        bool
+	Drop         bool
+	Crafting     bool
+	CameraSwitch bool
+	MenuReturn   bool
 
 	MouseDX    float32
 	MouseDY    float32
@@ -116,6 +141,7 @@ func NewController() *Controller {
 		state:            GameStateLogin,
 		input:            &InputState{},
 		chunkRenderers:   make(map[world.ChunkCoord]*ChunkRenderer),
+		cameraManager:    nil, // Will be set externally
 		mouseSensitivity: 0.1,
 		lastUpdate:       time.Now(),
 		viewDistance:     8,
@@ -199,6 +225,11 @@ func (c *Controller) StartWorld(worldName string, seed int64) {
 	// Set game state to playing
 	c.state = GameStatePlaying
 
+	// Initialize chunk loading around player
+	if c.world != nil && c.world.GetChunkManager() != nil {
+		c.world.GetChunkManager().InitializeChunkLoading(c.player.GetPosition())
+	}
+
 	// Setup input
 	fmt.Println("Input system initialized (placeholder)")
 }
@@ -258,6 +289,11 @@ func (c *Controller) handleMouseMove(x, y float32) {
 	c.player.SetRotation(types.NewVec3(c.cameraPitch, c.cameraYaw, 0))
 }
 
+// HandleMouseMove is the public method for handling mouse movement
+func (c *Controller) HandleMouseMove(x, y float32) {
+	c.handleMouseMove(x, y)
+}
+
 // handleMouseInput handles mouse button input (placeholder for pure OpenGL implementation)
 func (c *Controller) handleMouseInput(buttonId int, buttonState int) {
 	c.mu.Lock()
@@ -294,13 +330,16 @@ func (c *Controller) toggleInventory() {
 	}
 }
 
-// togglePause toggles pause menu
-func (c *Controller) togglePause() {
+// togglePause toggles pause menu, returns true if already paused (should exit to menu)
+func (c *Controller) togglePause() bool {
 	if c.state == GameStatePlaying {
 		c.state = GameStatePaused
+		return false
 	} else if c.state == GameStatePaused {
 		c.state = GameStatePlaying
+		return true
 	}
+	return false
 }
 
 // saveGame saves the current game state
@@ -348,6 +387,19 @@ func (c *Controller) Update() {
 	deltaTime := now.Sub(c.lastUpdate).Seconds()
 	c.lastUpdate = now
 
+	// Handle pause input first (works in both playing and paused states)
+	// ESC while playing -> pause, ESC while paused -> return to menu
+	if c.input.Pause && time.Since(c.lastCameraSwitch) > 150*time.Millisecond {
+		if c.state == GameStatePlaying {
+			c.state = GameStatePaused
+			fmt.Println("⏸️  Game Paused")
+		} else if c.state == GameStatePaused {
+			// ESC pressed while paused - return to main menu
+			c.ReturnToMainMenuFromGame()
+		}
+		c.lastCameraSwitch = time.Now()
+	}
+
 	if c.state != GameStatePlaying {
 		return
 	}
@@ -373,6 +425,12 @@ func (c *Controller) Update() {
 
 		c.player.Move(forward, right, c.input.Sprint)
 		c.player.Update(deltaTime)
+
+		// Handle camera switching with debouncing
+		if c.input.CameraSwitch && time.Since(c.lastCameraSwitch) > 200*time.Millisecond {
+			c.cameraManager.CycleMode()
+			c.lastCameraSwitch = time.Now()
+		}
 
 		// Update world around player
 		playerPos := c.player.GetPosition()
@@ -451,10 +509,36 @@ func (c *Controller) autoSave() {
 	fmt.Printf("Auto-saved world: %s\n", c.world.Name)
 }
 
-// updateCamera updates the camera position (placeholder for pure OpenGL implementation)
+// updateCamera updates the camera position using the camera manager
 func (c *Controller) updateCamera(playerPos types.Vec3) {
-	// Camera updates will be implemented with pure OpenGL
-	// For now, this is a placeholder
+	if c.cameraManager != nil {
+		// Update camera manager with player position and rotation
+		c.cameraManager.UpdateFromPlayer(playerPos, c.cameraYaw, c.cameraPitch)
+	}
+}
+
+// SetCameraManager sets the camera manager (called from launch_game.go)
+func (c *Controller) SetCameraManager(manager CameraManagerInterface) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.cameraManager = manager
+}
+
+// GetCameraManager returns the camera manager interface
+func (c *Controller) GetCameraManager() CameraManagerInterface {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.cameraManager
+}
+
+// GetCameraMode returns the current camera mode as interface
+func (c *Controller) GetCameraMode() CameraModeInterface {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.cameraManager != nil {
+		return c.cameraManager.GetMode()
+	}
+	return nil
 }
 
 // renderChunks renders all visible chunks
@@ -822,6 +906,18 @@ func (c *Controller) isValidTransition(from, to GameState) bool {
 // GoToMainMenu transitions to main menu
 func (c *Controller) GoToMainMenu() {
 	c.TransitionTo(GameStateMainMenu)
+}
+
+// ReturnToMainMenuFromGame saves game and returns to main menu
+func (c *Controller) ReturnToMainMenuFromGame() {
+	fmt.Println("🚪 Returning to main menu...")
+
+	// Save game before returning to menu
+	c.saveGame()
+
+	// Transition to main menu
+	c.TransitionTo(GameStateMainMenu)
+	fmt.Println("✅ Game ended - returned to main menu")
 }
 
 // GoToWorldSelect transitions to world selection
