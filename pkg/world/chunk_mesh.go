@@ -87,12 +87,29 @@ func (b *ChunkMeshBuilder) BuildMesh() *ChunkMesh {
 		}
 	}
 
+	// Convert to interleaved vertex format expected by OpenGL
+	interleavedVertices := make([]float32, 0, len(vertices)*6)
+	for i := 0; i < len(vertices); i++ {
+		// Position (3 floats)
+		interleavedVertices = append(interleavedVertices, vertices[i].X, vertices[i].Y, vertices[i].Z)
+		// Color (3 floats) - convert from Color type
+		if i < len(colors) {
+			interleavedVertices = append(interleavedVertices,
+				float32(colors[i].R)/255.0,
+				float32(colors[i].G)/255.0,
+				float32(colors[i].B)/255.0)
+		} else {
+			interleavedVertices = append(interleavedVertices, 1.0, 1.0, 1.0)
+		}
+	}
+
 	return &ChunkMesh{
-		Vertices: vertices,
-		Indices:  indices,
-		Normals:  normals,
-		UVs:      uvs,
-		Colors:   colors,
+		Vertices:            vertices,
+		Indices:             indices,
+		Normals:             normals,
+		UVs:                 uvs,
+		Colors:              colors,
+		InterleavedVertices: interleavedVertices,
 	}
 }
 
@@ -127,21 +144,22 @@ func (b *ChunkMeshBuilder) isBlockVisible(x, y, z int) bool {
 
 // getBlockColor returns the color for a block type
 func (b *ChunkMeshBuilder) getBlockColor(id BlockID) types.Color {
+	// Make all terrain blocks green for visualization
 	switch id {
 	case BlockIDStone:
-		return types.ColorGray()
+		return types.NewColor(0, 255, 0, 255) // Green stone
 	case BlockIDDirt:
-		return types.NewColor(139, 90, 43, 255)
+		return types.NewColor(0, 200, 0, 255) // Green dirt
 	case BlockIDGrass:
-		return types.NewColor(124, 252, 0, 255)
+		return types.NewColor(0, 255, 0, 255) // Green grass
 	case BlockIDWood:
-		return types.NewColor(139, 69, 19, 255)
+		return types.NewColor(0, 150, 0, 255) // Green wood
 	case BlockIDGlass:
-		return types.NewColor(200, 200, 255, 128)
+		return types.NewColor(0, 255, 0, 128) // Green glass
 	case BlockIDWater:
-		return types.NewColor(64, 164, 223, 180)
+		return types.NewColor(0, 100, 200, 180) // Blue-green water
 	default:
-		return types.ColorWhite()
+		return types.NewColor(0, 255, 0, 255) // Green default
 	}
 }
 

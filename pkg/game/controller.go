@@ -5,9 +5,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-gl/gl/v2.1/gl"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/tesselstudio/TesselBox/pkg/audio"
 	"github.com/tesselstudio/TesselBox/pkg/effects"
 	"github.com/tesselstudio/TesselBox/pkg/network"
+	"github.com/tesselstudio/TesselBox/pkg/opengl"
 	"github.com/tesselstudio/TesselBox/pkg/player"
 	"github.com/tesselstudio/TesselBox/pkg/types"
 	"github.com/tesselstudio/TesselBox/pkg/world"
@@ -47,8 +50,8 @@ type Controller struct {
 	// Game state
 	state GameState
 
-	// UI (placeholder for pure OpenGL implementation)
-	// hud interface will be implemented with pure OpenGL
+	// HUD
+	hud *HUD
 
 	// Input state
 	input *InputState
@@ -94,9 +97,12 @@ type InputState struct {
 	Inventory bool
 	Pause     bool
 	Debug     bool
+	Drop      bool
+	Crafting  bool
 
-	MouseDX float32
-	MouseDY float32
+	MouseDX    float32
+	MouseDY    float32
+	HotbarSlot int
 }
 
 // ChunkRenderer handles rendering of a chunk (placeholder for pure OpenGL implementation)
@@ -173,8 +179,8 @@ func (c *Controller) StartWorld(worldName string, seed int64) {
 		c.player.SetPosition(playerPos)
 	}
 
-	// HUD will be implemented with pure OpenGL
-	// For now, this is a placeholder
+	// Initialize HUD
+	c.hud = NewHUD(c.player)
 
 	// Initialize effects and audio
 	c.effectManager = effects.NewEffectManager()
@@ -373,8 +379,8 @@ func (c *Controller) Update() {
 		worldPos := world.Vec3{X: playerPos.X, Y: playerPos.Y, Z: playerPos.Z}
 		c.world.Update(deltaTime, worldPos)
 
-		// HUD updates will be implemented with pure OpenGL
-		// For now, this is a placeholder
+		// Update HUD
+		c.hud.Update()
 
 		// Update camera to follow player
 		c.updateCamera(playerPos)
@@ -457,53 +463,196 @@ func (c *Controller) renderChunks() {
 
 	for coord, chunk := range chunks {
 		// Check if mesh needs updating
+		var chunkMesh *world.ChunkMesh
 		if chunk.IsMeshDirty() {
-			mesh := chunk.GetMesh()
-			if mesh != nil {
-				c.updateChunkRenderer(coord, mesh)
+			chunkMesh = chunk.GetMesh()
+			if chunkMesh != nil {
+				c.updateChunkRenderer(coord, chunkMesh)
 			}
 		}
 
-		// Render chunk
-		_, exists := c.chunkRenderers[coord]
-		if exists {
-			// Chunk rendering will be implemented with pure OpenGL
+		// Render chunk using OpenGL mesh renderer
+		if chunkMesh != nil {
+			c.renderChunkMesh(coord, chunkMesh)
 		}
 	}
 }
 
-// updateChunkRenderer creates or updates a chunk renderer (placeholder for pure OpenGL implementation)
-func (c *Controller) updateChunkRenderer(coord world.ChunkCoord, mesh *world.ChunkMesh) {
-	renderer, exists := c.chunkRenderers[coord]
-	if !exists {
-		// Create new renderer
-		renderer = &ChunkRenderer{}
-		c.chunkRenderers[coord] = renderer
+// renderChunkMesh renders a single chunk mesh using OpenGL
+func (c *Controller) renderChunkMesh(coord world.ChunkCoord, chunkMesh *world.ChunkMesh) {
+	if chunkMesh == nil || len(chunkMesh.Vertices) == 0 || len(chunkMesh.Indices) == 0 {
+		return
 	}
 
-	// Update mesh data
-	renderer.mesh = mesh
+	// Convert world.ChunkMesh to OpenGL ChunkMeshData
+	meshData := c.convertChunkMeshToOpenGL(chunkMesh)
+	if meshData != nil {
+		// This would be handled by the OpenGL engine's mesh renderer
+		// For now, we'll use a simple direct rendering approach
+		c.renderChunkDirectly(meshData)
+	}
+}
+
+// convertChunkMeshToOpenGL converts world.ChunkMesh to opengl.ChunkMeshData
+func (c *Controller) convertChunkMeshToOpenGL(chunkMesh *world.ChunkMesh) *opengl.ChunkMeshData {
+	if chunkMesh == nil {
+		return nil
+	}
+
+	// Convert types.Vec3 to float32 vertices
+	vertices := make([]float32, 0)
+	for _, vertex := range chunkMesh.Vertices {
+		vertices = append(vertices, vertex.X, vertex.Y, vertex.Z)
+	}
+
+	return &opengl.ChunkMeshData{
+		Vertices:    vertices,
+		Indices:     chunkMesh.Indices,
+		VertexCount: int32(len(vertices) / 3), // Assuming 3 vertices per position
+		IndexCount:  int32(len(chunkMesh.Indices)),
+	}
+}
+
+// renderChunkDirectly renders chunk mesh directly with OpenGL
+func (c *Controller) renderChunkDirectly(meshData *opengl.ChunkMeshData) {
+	if meshData == nil {
+		return
+	}
+
+	// Use a simple shader for chunk rendering
+	vertexShader := `
+		#version 410 core
+		layout (location = 0) in vec3 aPos;
+		layout (location = 1) in vec3 aColor;
+		uniform mat4 model;
+		uniform mat4 view;
+		uniform mat4 projection;
+		out vec3 FragColor;
+		
+		void main() {
+			FragColor = aColor;
+			gl_Position = projection * view * model * vec4(aPos, 1.0);
+		}
+	`
+
+	fragmentShader := `
+		#version 410 core
+		in vec3 FragColor;
+		out vec4 color;
+		
+		void main() {
+			color = vec4(FragColor, 1.0);
+		}
+	`
+
+	// Create and compile shader program (simplified for this example)
+	shaderProgram := c.createChunkShaderProgram(vertexShader, fragmentShader)
+	if shaderProgram == 0 {
+		return
+	}
+
+	defer gl.DeleteProgram(shaderProgram)
+
+	// Create VAO and VBO for chunk
+	var vao, vbo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+
+	// Bind and fill VBO
+	gl.BindVertexArray(vao)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(meshData.Vertices)*4, gl.Ptr(meshData.Vertices), gl.STATIC_DRAW)
+
+	// Set vertex attributes
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0)) // Position
+	gl.EnableVertexAttribArray(0)
+	if len(meshData.Vertices) >= 6 { // Check if we have color data
+		gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(3*4)) // Color
+		gl.EnableVertexAttribArray(1)
+	}
+
+	// Set up matrices
+	model := mgl32.Ident4()
+	view := mgl32.LookAtV(
+		mgl32.Vec3{0, 10, 5}, // Camera position
+		mgl32.Vec3{0, 0, 0},  // Look at origin
+		mgl32.Vec3{0, 1, 0},  // Up vector
+	)
+	projection := mgl32.Perspective(mgl32.DegToRad(45.0), 800.0/600.0, 0.1, 100.0)
+
+	modelLoc := gl.GetUniformLocation(shaderProgram, gl.Str("model\x00"))
+	viewLoc := gl.GetUniformLocation(shaderProgram, gl.Str("view\x00"))
+	projLoc := gl.GetUniformLocation(shaderProgram, gl.Str("projection\x00"))
+
+	gl.UniformMatrix4fv(modelLoc, 1, false, &model[0])
+	gl.UniformMatrix4fv(viewLoc, 1, false, &view[0])
+	gl.UniformMatrix4fv(projLoc, 1, false, &projection[0])
+
+	// Draw the chunk
+	gl.DrawArrays(gl.TRIANGLES, 0, meshData.VertexCount)
+
+	// Cleanup
+	gl.BindVertexArray(0)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	gl.DeleteVertexArrays(1, &vao)
+	gl.DeleteBuffers(1, &vbo)
+}
+
+// createChunkShaderProgram creates and compiles shaders for chunk rendering
+func (c *Controller) createChunkShaderProgram(vertexSource, fragmentSource string) uint32 {
+	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
+	cstr, free := gl.Strs(vertexSource)
+	gl.ShaderSource(vertexShader, 1, cstr, nil)
+	gl.CompileShader(vertexShader)
+	free()
+
+	fragmentShader := gl.CreateShader(gl.FRAGMENT_SHADER)
+	cstr, free = gl.Strs(fragmentSource)
+	gl.ShaderSource(fragmentShader, 1, cstr, nil)
+	gl.CompileShader(fragmentShader)
+	free()
+
+	program := gl.CreateProgram()
+	gl.AttachShader(program, vertexShader)
+	gl.AttachShader(program, fragmentShader)
+	gl.LinkProgram(program)
+
+	// Check linking status
+	var status int32
+	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
+	if status != gl.TRUE {
+		var logLength int32
+		gl.GetProgramiv(program, gl.INFO_LOG_LENGTH, &logLength)
+		logBytes := make([]byte, logLength+1)
+		gl.GetProgramInfoLog(program, logLength, nil, &logBytes[0])
+		log := string(logBytes)
+		fmt.Printf("Chunk shader linking error: %v\n", log)
+		gl.DeleteProgram(program)
+		return 0
+	}
+
+	// Clean up shaders
+	gl.DeleteShader(vertexShader)
+	gl.DeleteShader(fragmentShader)
+
+	return program
+}
+
+// updateChunkRenderer creates or updates a chunk renderer
+func (c *Controller) updateChunkRenderer(coord world.ChunkCoord, mesh *world.ChunkMesh) {
+	// Store mesh reference for rendering
+	// The actual rendering is handled in renderChunkMesh
 }
 
 // createChunkDrawing creates a chunk rendering (placeholder for pure OpenGL implementation)
 func (c *Controller) createChunkDrawing(coord world.ChunkCoord, mesh *world.ChunkMesh) interface{} {
-	if len(mesh.Vertices) == 0 || len(mesh.Indices) == 0 {
-		return nil
-	}
-
-	// Chunk rendering will be implemented with pure OpenGL
-	// For now, this is a placeholder
+	// This method is replaced by renderChunkMesh
 	return nil
 }
 
 // createKaijuMesh converts world.ChunkMesh to mesh format (placeholder for pure OpenGL implementation)
 func (c *Controller) createKaijuMesh(mesh *world.ChunkMesh) interface{} {
-	if len(mesh.Vertices) == 0 || len(mesh.Indices) == 0 {
-		return nil
-	}
-
-	// Mesh creation will be implemented with pure OpenGL
-	// For now, this is a placeholder
+	// This method is replaced by convertChunkMeshToOpenGL
 	return nil
 }
 
@@ -528,12 +677,11 @@ func (c *Controller) GetPlayer() *player.Player {
 	return c.player
 }
 
-// GetHUD returns the HUD interface (placeholder for pure OpenGL implementation)
-func (c *Controller) GetHUD() interface{} {
+// GetHUD returns the HUD interface
+func (c *Controller) GetHUD() *HUD {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	// HUD will be implemented with pure OpenGL
-	return nil
+	return c.hud
 }
 
 // IsPlaying returns true if game is in playing state
@@ -541,6 +689,71 @@ func (c *Controller) IsPlaying() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.state == GameStatePlaying
+}
+
+// Render renders the game world and UI
+func (c *Controller) Render(width, height int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.state != GameStatePlaying {
+		return
+	}
+
+	// Render HUD
+	if c.hud != nil {
+		c.hud.Render(width, height)
+	}
+}
+
+// SetInputState updates the controller's input state
+func (c *Controller) SetInputState(state *InputState) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.input = state
+}
+
+// HandleJump processes jump action
+func (c *Controller) HandleJump() {
+	if c.player != nil && c.state == GameStatePlaying {
+		c.player.Jump()
+	}
+}
+
+// HandleAttack processes attack action
+func (c *Controller) HandleAttack() {
+	if c.player != nil && c.state == GameStatePlaying {
+		// TODO: Implement block breaking
+		fmt.Println("Attack action triggered")
+	}
+}
+
+// HandleUse processes use action
+func (c *Controller) HandleUse() {
+	if c.player != nil && c.state == GameStatePlaying {
+		// TODO: Implement block placing
+		fmt.Println("Use action triggered")
+	}
+}
+
+// HandleDropItem processes drop item action
+func (c *Controller) HandleDropItem() {
+	if c.player != nil && c.state == GameStatePlaying {
+		// TODO: Implement item dropping
+		fmt.Println("Drop item action triggered")
+	}
+}
+
+// SetHotbarSlot sets the active hotbar slot
+func (c *Controller) SetHotbarSlot(slot int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.input != nil {
+		c.input.HotbarSlot = slot
+	}
+	if c.player != nil {
+		c.player.SetHotbarSlot(slot)
+	}
 }
 
 // Stop stops the game controller

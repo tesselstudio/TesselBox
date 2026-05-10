@@ -64,9 +64,9 @@ func (h *HexPrism) GenerateVertices() []types.Vec3 {
 }
 
 // GenerateIndices creates the triangle indices for the hexagonal prism
-// Returns 36 indices for 12 triangles (2 per hexagon face + 6 for sides)
+// Returns 60 indices for 20 triangles (4 per hexagon face + 12 for sides)
 func (h *HexPrism) GenerateIndices() []uint32 {
-	indices := make([]uint32, 36)
+	indices := make([]uint32, 60)
 	idx := 0
 
 	// Top hexagon (4 triangles to form hexagon)

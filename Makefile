@@ -65,7 +65,7 @@ build-ios:
 
 # Run locally
 run:
-	go run $(CMD_PATH)
+	go run ./launch_game.go
 
 # Run as server
 run-server:
