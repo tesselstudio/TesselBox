@@ -1,89 +1,24 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tesselstudio/TesselBox/pkg/game"
 	"github.com/tesselstudio/TesselBox/pkg/opengl"
-	"github.com/tesselstudio/TesselBox/pkg/player"
-	"github.com/tesselstudio/TesselBox/pkg/types"
-	"github.com/tesselstudio/TesselBox/pkg/world"
 )
 
 func main() {
-	println("🚀 Launching TesselBox Hexagonal Prism World")
+	println("🚀 Launching TesselBox with Proper Input Handling")
 
-	// Create world
-	gameWorld := world.NewWorld("TesselBox World", 12345)
+	// Create game controller
+	controller := game.NewController()
 
-	// Initialize chunk loading around spawn point
-	spawn := gameWorld.GetSpawnPoint()
-	tempPlayerPos := types.NewVec3(float32(spawn.X), 70.0, float32(spawn.Z))
-	gameWorld.GetChunkManager().InitializeChunkLoading(tempPlayerPos)
+	// Start world
+	controller.StartWorld("TesselBox World", 12345)
 
-	// Wait for chunks to generate
-	println("⏳ Generating vast hexagonal prism world...")
-	time.Sleep(3 * time.Second)
-
-	// Check chunk generation
-	stats := gameWorld.GetChunkManager().GetStats()
-	println("📊 Generated", stats.LoadedChunks, "chunks with hexagonal prisms")
-
-	if stats.LoadedChunks == 0 {
-		println("❌ No chunks generated!")
-		return
-	}
-
-	// Wait for mesh generation to complete
-	println("⏳ Waiting for mesh generation...")
-	maxWaitTime := 10 * time.Second
-	waitInterval := 500 * time.Millisecond
-	startTime := time.Now()
-
-	for time.Since(startTime) < maxWaitTime {
-		// Force mesh rebuild
-		gameWorld.GetChunkManager().RebuildDirtyMeshes()
-
-		// Check if chunks have meshes
-		allChunksHaveMeshes := true
-		loadedChunks := gameWorld.GetChunkManager().GetLoadedChunks()
-
-		for coord, chunk := range loadedChunks {
-			mesh := chunk.GetMesh()
-			if mesh == nil || len(mesh.InterleavedVertices) == 0 {
-				allChunksHaveMeshes = false
-				println("🔍 DEBUG: Chunk", coord.X, coord.Z, "still needs mesh")
-				break
-			}
-		}
-
-		if allChunksHaveMeshes {
-			println("✅ All chunks have meshes!")
-			break
-		}
-
-		time.Sleep(waitInterval)
-	}
-
-	// Final check
-	finalStats := gameWorld.GetChunkManager().GetStats()
-	println("📊 Final stats - Loaded:", finalStats.LoadedChunks, "Generated:", finalStats.GeneratedChunks, "Meshed:", finalStats.MeshedChunks)
-
-	// Find safe spawn height
-	safeY := gameWorld.GetSafeSpawnHeight(int(spawn.X), int(spawn.Z))
-
-	playerPos := types.NewVec3(float32(spawn.X), float32(safeY), float32(spawn.Z))
-
-	println("🔍 DEBUG: Safe spawn height:", safeY)
-	println("🔍 DEBUG: Spawn position - X:", spawn.X, "Y:", safeY, "Z:", spawn.Z)
-	println("🔍 DEBUG: Player position - X:", playerPos.X, "Y:", playerPos.Y, "Z:", playerPos.Z)
-
-	// Create player
-	player := player.NewPlayer(gameWorld)
-	player.SetPosition(playerPos)
-
-	// Create OpenGL engine
-	println("🔧 Creating OpenGL window for hexagonal prism world...")
+	// Create OpenGL engine with proper resolution
+	println("🔧 Creating OpenGL window...")
 	engine, err := opengl.NewEngine(1024, 768, "TesselBox - Hexagonal Prism World")
 	if err != nil {
 		println("❌ Failed to create OpenGL engine:", err.Error())
@@ -91,53 +26,76 @@ func main() {
 	}
 	defer engine.Cleanup()
 
-	println("✅ OpenGL window created!")
-	println("🌍 Vast hexagonal prism world with different terrains is ready!")
-	println("👤 Player spawned at X=", spawn.X, " Y=", safeY, " Z=", spawn.Z)
+	// Create input handler and connect to engine
+	window := engine.GetWindow()
+	inputHandler := game.NewInputHandler(window)
 
-	// Generate meshes for all chunks
-	println("🎨 Generating hexagonal prism meshes...")
-	gameWorld.GetChunkManager().UpdateEngineWithMeshes(engine)
+	// Set up mouse movement callback
+	inputHandler.SetMouseMoveCallback(func(x, y float64) {
+		controller.HandleMouseMove(float32(x), float32(y))
+	})
 
-	// Debug: Verify mesh transfer
-	meshCount := engine.GetLoadedMeshCount()
-	println("🔍 DEBUG: Engine has", meshCount, "loaded meshes after UpdateEngineWithMeshes")
+	// Lock mouse after a short delay to ensure window is properly established
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		inputHandler.LockMouse()
+		println("🎯 Mouse locked for first-person control")
+	}()
 
-	if meshCount == 0 {
-		println("❌ CRITICAL: No meshes were transferred to engine! This explains grey screen.")
-		println("🔍 DEBUG: Checking chunk manager stats...")
-		stats := gameWorld.GetChunkManager().GetStats()
-		println("📊 Chunk Manager Stats - Loaded:", stats.LoadedChunks, "Generated:", stats.GeneratedChunks, "Meshed:", stats.MeshedChunks)
-	} else {
-		println("✅ Good: Engine received", meshCount, "meshes for rendering")
-	}
+	println("✅ OpenGL window and input system created!")
+	println("🌍 World ready with WASD movement and mouse camera control!")
+	println("📝 Controls: WASD=Move, Mouse=Camera, ESC=Pause/Quit, C=Switch Camera")
 
-	// Game loop - render the vast hexagonal world
-	println("🎮 Starting rendering loop...")
+	// Main game loop with proper input processing
+	println("🎮 Starting game loop...")
 	frameCount := 0
-	for !engine.ShouldClose() {
+
+	for !engine.ShouldClose() && controller.GetState() != game.GameStateMainMenu {
+		frameStart := time.Now()
+
+		// Process input
+		inputHandler.ProcessInput(controller)
+		inputHandler.ResetMouseDelta()
+
 		// Update game logic
-		player.Update(0.016) // ~60 FPS
-		playerPos := player.GetPosition()
-		gameWorld.Update(0.016, world.NewVec3(playerPos.X, playerPos.Y, playerPos.Z))
+		controller.Update()
 
 		// Update camera from player
-		playerRot := player.GetRotation()
-		engine.UpdateCameraFromPlayer(
-			mgl32.Vec3{playerPos.X, playerPos.Y, playerPos.Z},
-			mgl32.Vec3{playerRot.X, playerRot.Y, playerRot.Z},
-		)
+		player := controller.GetPlayer()
+		if player != nil {
+			// Update engine camera using camera manager
+			cameraManager := controller.GetCameraManager()
+			if cameraManager != nil {
+				// Get current camera position and update engine
+				camPos := cameraManager.GetPosition()
+				camTarget := camPos.Add(cameraManager.GetFront())
+				engine.SetCameraPosition(camPos)
+				engine.SetCameraTarget(camTarget)
+			}
+		}
 
 		// Render frame
 		engine.BeginFrame()
-		engine.Render(nil)
+		engine.Render(controller)
 		engine.EndFrame()
 		engine.PollEvents()
+
+		// Frame rate limiting
+		elapsed := time.Since(frameStart)
+		if elapsed < time.Second/60 {
+			time.Sleep(time.Second/60 - elapsed)
+		}
 
 		// Print status every 60 frames (1 second)
 		frameCount++
 		if frameCount%60 == 0 {
-			println("🎨 Rendering hexagonal prism world... Frame:", frameCount/60)
+			gameState := controller.GetState()
+			cameraManager := controller.GetCameraManager()
+			cameraMode := "Unknown"
+			if cameraManager != nil {
+				cameraMode = fmt.Sprintf("%v", cameraManager.GetMode())
+			}
+			println("🎨 Rendering - Frame:", frameCount/60, "State:", fmt.Sprintf("%v", gameState), "Camera:", cameraMode)
 		}
 	}
 

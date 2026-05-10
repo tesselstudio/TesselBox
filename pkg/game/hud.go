@@ -1,6 +1,9 @@
 package game
 
 import (
+	"runtime"
+	"sync"
+
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/tesselstudio/TesselBox/pkg/crafting"
@@ -33,22 +36,24 @@ type HUD struct {
 	showInventory bool
 	showCrafting  bool
 	selectedSlot  int
+
+	// Initialization tracking
+	initialized   bool
+	initMu        sync.Mutex
 }
 
 // NewHUD creates a new HUD system
+// Note: OpenGL resources are initialized lazily on first Render() call
+// to ensure the context is current on the correct thread
 func NewHUD(p *player.Player) *HUD {
-	hud := &HUD{
+	return &HUD{
 		player:       p,
 		playerStats:  p.GetStats(),
 		inventory:    p.GetInventory(),
 		visible:      true,
 		selectedSlot: 0,
+		initialized:  false,
 	}
-
-	// Initialize OpenGL resources
-	hud.initOpenGL()
-
-	return hud
 }
 
 // initOpenGL initializes OpenGL resources for HUD
@@ -261,6 +266,17 @@ func (h *HUD) Render(width, height int) {
 		return
 	}
 
+	// Lazy initialization of OpenGL resources
+	// Must be on the main thread with current GL context
+	h.initMu.Lock()
+	if !h.initialized {
+		runtime.LockOSThread()
+		h.initOpenGL()
+		h.initialized = true
+		runtime.UnlockOSThread()
+	}
+	h.initMu.Unlock()
+
 	// Set up orthographic projection for 2D rendering
 	projection := mgl32.Ortho(0, float32(width), float32(height), 0, -1, 1)
 
@@ -389,6 +405,13 @@ func (h *HUD) IsVisible() bool {
 
 // Cleanup cleans up OpenGL resources
 func (h *HUD) Cleanup() {
+	h.initMu.Lock()
+	defer h.initMu.Unlock()
+
+	if !h.initialized {
+		return
+	}
+
 	gl.DeleteVertexArrays(1, &h.crosshairVAO)
 	gl.DeleteBuffers(1, &h.crosshairVBO)
 	gl.DeleteVertexArrays(1, &h.hotbarVAO)
@@ -398,4 +421,5 @@ func (h *HUD) Cleanup() {
 	gl.DeleteVertexArrays(1, &h.hungerBarVAO)
 	gl.DeleteBuffers(1, &h.hungerBarVBO)
 	gl.DeleteProgram(h.hudShader)
+	h.initialized = false
 }

@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "pos_x": 0,
+  "pos_y": 50.945892,
+  "pos_z": 0,
+  "rot_x": 0,
+  "rot_y": 0,
+  "rot_z": 0,
+  "health": 20,
+  "max_health": 20,
+  "hunger": 19.980377,
+  "max_hunger": 20,
+  "stamina": 20,
+  "max_stamina": 20,
+  "saturation": 4.884539,
+  "level": 1,
+  "experience": 0,
+  "skill_points": 0,
+  "inventory_slots": [
+    {
+      "slot": 0,
+      "item_id": "wood",
+      "quantity": 16
+    },
+    {
+      "slot": 1,
+      "item_id": "stone",
+      "quantity": 32
+    },
+    {
+      "slot": 2,
+      "item_id": "dirt",
+      "quantity": 16
+    },
+    {
+      "slot": 3,
+      "item_id": "wooden_pickaxe",
+      "quantity": 1
+    },
+    {
+      "slot": 4,
+      "item_id": "wooden_sword",
+      "quantity": 1
+    },
+    {
+      "slot": 5,
+      "item_id": "apple",
+      "quantity": 8
+    }
+  ],
+  "hotbar_slot": 0,
+  "last_saved": "2026-05-10T15:48:15.727701886+01:00"
+}

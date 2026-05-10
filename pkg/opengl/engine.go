@@ -9,6 +9,7 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tesselstudio/TesselBox/pkg/types"
 	"github.com/tesselstudio/TesselBox/pkg/world"
 )
 
@@ -18,6 +19,8 @@ type Engine struct {
 	shaderProgram uint32
 	vao, vbo      uint32
 	camera        *Camera
+	cameraManager *CameraManager
+	inputHandler  interface{} // Will be game.InputHandler
 	initialized   bool
 	meshRenderer  *MeshRenderer
 	chunkMeshes   map[string]*ChunkMeshData
@@ -39,8 +42,8 @@ type Camera struct {
 func NewEngine(width, height int, title string) (*Engine, error) {
 	println("🔧 Initializing OpenGL engine...")
 
-	// Initialize GLFW
-	if err := glfw.Init(); err != nil {
+	// Initialize GLFW using manager
+	if err := InitializeGLFW(); err != nil {
 		println("❌ Failed to initialize GLFW:", err.Error())
 		return nil, err
 	}
@@ -61,6 +64,15 @@ func NewEngine(width, height int, title string) (*Engine, error) {
 		return nil, err
 	}
 	println("✅ GLFW window created successfully")
+
+	// Show the window and make it focused
+	window.Show()
+	println("✅ GLFW window shown")
+
+	// Bring window to front and focus it
+	window.Focus()
+	println("✅ GLFW window focused")
+
 	window.MakeContextCurrent()
 	println("✅ OpenGL context made current")
 
@@ -79,8 +91,8 @@ func NewEngine(width, height int, title string) (*Engine, error) {
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
 
-	// Set clear color
-	gl.ClearColor(0.1, 0.1, 0.2, 1.0)
+	// Set clear color to black (UI elements will be drawn on top)
+	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	println("✅ OpenGL state configured")
 
 	engine := &Engine{
@@ -94,8 +106,9 @@ func NewEngine(width, height int, title string) (*Engine, error) {
 			Near:        0.1,
 			Far:         100.0,
 		},
-		meshRenderer: NewMeshRenderer(),
-		chunkMeshes:  make(map[string]*ChunkMeshData),
+		cameraManager: NewCameraManager(width, height),
+		meshRenderer:  NewMeshRenderer(),
+		chunkMeshes:   make(map[string]*ChunkMeshData),
 	}
 
 	// Initialize OpenGL resources
@@ -276,8 +289,9 @@ func (e *Engine) Render(gameController interface{}) {
 
 	// Debug: Print camera position every 60 frames
 	if e.frameCounter%60 == 0 {
-		println("🔍 DEBUG: Camera Position:", e.camera.Position[0], e.camera.Position[1], e.camera.Position[2])
-		println("🔍 DEBUG: Camera Target:", e.camera.Target[0], e.camera.Target[1], e.camera.Target[2])
+		cameraPos := e.GetCameraPosition()
+		println("🔍 DEBUG: Camera Position:", cameraPos[0], cameraPos[1], cameraPos[2])
+		println("🔍 DEBUG: Camera Mode:", e.cameraManager.GetMode())
 	}
 	e.frameCounter++
 
@@ -290,10 +304,10 @@ func (e *Engine) Render(gameController interface{}) {
 	// Use shader program
 	gl.UseProgram(e.shaderProgram)
 
-	// Create transformation matrices
+	// Create transformation matrices using camera manager
 	model := mgl32.Ident4()
-	view := mgl32.LookAtV(e.camera.Position, e.camera.Target, e.camera.Up)
-	projection := mgl32.Perspective(mgl32.DegToRad(e.camera.FOV), e.camera.AspectRatio, e.camera.Near, e.camera.Far)
+	view := e.cameraManager.GetViewMatrix()
+	projection := e.cameraManager.GetProjectionMatrix()
 
 	// Set uniforms
 	modelLoc := gl.GetUniformLocation(e.shaderProgram, gl.Str("model\x00"))
@@ -380,8 +394,10 @@ func (e *Engine) Cleanup() {
 	}
 	if e.window != nil {
 		e.window.Destroy()
+		e.window = nil
 	}
-	glfw.Terminate()
+	// Note: Don't terminate GLFW here as it would prevent subsequent window creation
+	// GLFW termination should only happen when the entire application is shutting down
 }
 
 // GetWindow returns the GLFW window
@@ -394,7 +410,15 @@ func (e *Engine) GetLoadedMeshCount() int {
 	return e.meshRenderer.GetLoadedMeshCount()
 }
 
-// SetCameraPosition updates the camera position
+// GetCameraPosition returns the current camera position from the camera manager
+func (e *Engine) GetCameraPosition() mgl32.Vec3 {
+	if e.cameraManager != nil {
+		return e.cameraManager.GetPosition()
+	}
+	return e.camera.Position
+}
+
+// SetCameraPosition updates the camera position (legacy method)
 func (e *Engine) SetCameraPosition(pos mgl32.Vec3) {
 	e.camera.Position = pos
 }
@@ -454,9 +478,15 @@ func (e *Engine) RemoveChunkMesh(coord world.ChunkCoord) {
 	e.meshRenderer.RemoveMesh(coord)
 }
 
-// UpdateCameraFromPlayer updates camera position/rotation from player
+// UpdateCameraFromPlayer updates camera position/rotation from player using camera manager
 func (e *Engine) UpdateCameraFromPlayer(playerPos, playerRot mgl32.Vec3) {
-	// Camera is at player position + eye height, offset backwards for first-person view
+	if e.cameraManager != nil {
+		// Convert mgl32.Vec3 to types.Vec3 for camera manager
+		typesPos := types.NewVec3(playerPos.X(), playerPos.Y(), playerPos.Z())
+		e.cameraManager.UpdateFromPlayer(typesPos, playerRot.Y(), playerRot.X())
+	}
+
+	// Also update legacy camera for compatibility
 	eyeHeight := float32(1.62) // Player eye height
 	e.camera.Position = mgl32.Vec3{playerPos.X(), playerPos.Y() + eyeHeight, playerPos.Z()}
 	e.camera.Target = mgl32.Vec3{playerPos.X(), playerPos.Y() + eyeHeight, playerPos.Z()}
@@ -475,6 +505,54 @@ func (e *Engine) UpdateCameraFromPlayer(playerPos, playerRot mgl32.Vec3) {
 		e.camera.Position.Y() + forwardY,
 		e.camera.Position.Z() + forwardZ,
 	}
+}
+
+// GetCameraManager returns the camera manager
+func (e *Engine) GetCameraManager() *CameraManager {
+	return e.cameraManager
+}
+
+// SetInputCallbacks sets up input callbacks for the window
+func (e *Engine) SetInputCallbacks(
+	keyCallback func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey),
+	mouseCallback func(window *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey),
+	mouseMoveCallback func(window *glfw.Window, xpos, ypos float64),
+) {
+	if e.window != nil {
+		if keyCallback != nil {
+			e.window.SetKeyCallback(keyCallback)
+		}
+		if mouseCallback != nil {
+			e.window.SetMouseButtonCallback(mouseCallback)
+		}
+		if mouseMoveCallback != nil {
+			e.window.SetCursorPosCallback(mouseMoveCallback)
+		}
+	}
+}
+
+// LockMouse locks the cursor to the window
+func (e *Engine) LockMouse() {
+	if e.window != nil {
+		e.window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+	}
+}
+
+// UnlockMouse unlocks the cursor
+func (e *Engine) UnlockMouse() {
+	if e.window != nil {
+		e.window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
+	}
+}
+
+// SetInputHandler sets the input handler for the engine
+func (e *Engine) SetInputHandler(inputHandler interface{}) {
+	e.inputHandler = inputHandler
+}
+
+// GetInputHandler returns the input handler
+func (e *Engine) GetInputHandler() interface{} {
+	return e.inputHandler
 }
 
 func init() {

@@ -437,19 +437,19 @@ func (cm *ChunkManager) generateBlockMesh(x, y, z int, block BlockData) ([]types
 func (cm *ChunkManager) getBlockColor(id BlockID) types.Color {
 	switch id {
 	case BlockIDStone:
-		return types.ColorGray()
+		return types.NewColor(128, 128, 128, 255) // Gray stone
 	case BlockIDDirt:
-		return types.NewColor(139, 90, 43, 255)
+		return types.NewColor(139, 90, 43, 255) // Brown dirt
 	case BlockIDGrass:
-		return types.NewColor(124, 252, 0, 255)
+		return types.NewColor(124, 252, 0, 255) // Green grass
 	case BlockIDWood:
-		return types.NewColor(139, 69, 19, 255)
+		return types.NewColor(160, 82, 45, 255) // Brown wood
 	case BlockIDGlass:
-		return types.NewColor(200, 200, 255, 128)
+		return types.NewColor(200, 200, 255, 180) // Light blue glass
 	case BlockIDWater:
-		return types.NewColor(64, 164, 223, 180)
+		return types.NewColor(64, 164, 223, 180) // Blue water
 	default:
-		return types.ColorWhite()
+		return types.NewColor(255, 255, 255, 255) // White default
 	}
 }
 

@@ -198,6 +198,21 @@ func (ih *InputHandler) UnlockMouse() {
 	}
 }
 
+// HandleKeyCallback is the public key callback handler
+func (ih *InputHandler) HandleKeyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+	ih.handleKeyCallback(window, key, scancode, action, mods)
+}
+
+// HandleMouseCallback is the public mouse callback handler
+func (ih *InputHandler) HandleMouseCallback(window *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
+	ih.handleMouseCallback(window, button, action, mods)
+}
+
+// HandleMouseMoveCallback is the public mouse move callback handler
+func (ih *InputHandler) HandleMouseMoveCallback(window *glfw.Window, xpos, ypos float64) {
+	ih.handleMouseMoveCallback(window, xpos, ypos)
+}
+
 // ProcessInput applies current input to the controller
 func (ih *InputHandler) ProcessInput(controller *Controller) {
 	if controller == nil {
@@ -226,6 +241,8 @@ func (ih *InputHandler) ProcessInput(controller *Controller) {
 	input.Inventory = ih.keys[glfw.KeyI]
 	input.Pause = ih.keys[glfw.KeyEscape]
 	input.Debug = ih.keys[glfw.KeyF3]
+	input.CameraSwitch = ih.keys[glfw.KeyRightControl] || ih.keys[glfw.KeyC]
+	input.MenuReturn = ih.keys[glfw.KeyQ]
 
 	// Combat
 	input.Attack = ih.mouseButtons[glfw.MouseButtonLeft]
