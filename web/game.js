@@ -78,14 +78,14 @@ const WebGame = {
             // Set up input handling
             this.setupInput();
             
-            // Start game loop
-            this.running = true;
-            this.gameLoop();
-            
-            // Call Go function to start world
+            // Call Go function to start world first
             if (typeof startWorld !== 'undefined') {
                 startWorld('browser_world', Date.now());
             }
+            
+            // Start game loop after world is initialized
+            this.running = true;
+            this.gameLoop();
             
             console.log('Game started');
             
@@ -251,8 +251,8 @@ window.registerUpdateLoop = function() {
 };
 
 window.handleKeyInput = function(keyCode, keyState) {
-    // This will be called from Go
-    WebGame.handleKeyInputFromGo(keyCode, keyState);
+    // This will be called from Go - key input is handled directly in Go
+    console.log('Key input from Go:', keyCode, keyState);
 };
 
 window.handleMouseMove = function(dx, dy) {

@@ -66,9 +66,14 @@ func (r *Renderer) Initialize(canvas js.Value) error {
 	// Set clear color (sky blue)
 	r.gl.Call("clearColor", 0.5, 0.7, 1.0, 1.0)
 
-	// Initialize shaders
 	if err := r.initShaders(); err != nil {
 		return fmt.Errorf("failed to initialize shaders: %w", err)
+	}
+
+	// Check for VAO support (WebGL2 feature)
+	vaoExt := r.gl.Call("getExtension", "OES_vertex_array_object")
+	if vaoExt.IsNull() {
+		fmt.Println("Warning: VAO extension not available, using WebGL2 native VAOs")
 	}
 
 	r.initialized = true
@@ -78,16 +83,16 @@ func (r *Renderer) Initialize(canvas js.Value) error {
 
 // initShaders compiles and links shader programs
 func (r *Renderer) initShaders() error {
-	// Vertex shader source
+	// Vertex shader source (WebGL 2 compatible)
 	vertexShaderSource := `
-		attribute vec3 aPos;
-		attribute vec3 aColor;
+		in vec3 aPos;
+		in vec3 aColor;
 		
 		uniform mat4 model;
 		uniform mat4 view;
 		uniform mat4 projection;
 		
-		varying vec3 vertexColor;
+		out vec3 vertexColor;
 		
 		void main() {
 			gl_Position = projection * view * model * vec4(aPos, 1.0);
@@ -95,13 +100,14 @@ func (r *Renderer) initShaders() error {
 		}
 	`
 
-	// Fragment shader source
+	// Fragment shader source (WebGL 2 compatible)
 	fragmentShaderSource := `
 		precision mediump float;
-		varying vec3 vertexColor;
+		in vec3 vertexColor;
+		out vec4 fragColor;
 		
 		void main() {
-			gl_FragColor = vec4(vertexColor, 1.0);
+			fragColor = vec4(vertexColor, 1.0);
 		}
 	`
 
@@ -205,12 +211,18 @@ func (r *Renderer) Render() {
 
 // renderChunkMesh renders a single chunk mesh
 func (r *Renderer) renderChunkMesh(mesh *ChunkMeshData) {
-	if mesh == nil || mesh.vao.IsNull() {
+	if mesh == nil || mesh.IndexCount == 0 {
+		return
+	}
+
+	if mesh.vao.IsNull() {
 		return
 	}
 
 	r.gl.Call("bindVertexArray", mesh.vao)
-	r.gl.Call("drawElements", r.gl.Get("TRIANGLES"), mesh.IndexCount, r.gl.Get("UNSIGNED_INT"), 0)
+	if mesh.IndexCount > 0 {
+		r.gl.Call("drawElements", r.gl.Get("TRIANGLES"), mesh.IndexCount, r.gl.Get("UNSIGNED_INT"), 0)
+	}
 	r.gl.Call("bindVertexArray", js.Value{})
 }
 
@@ -248,12 +260,10 @@ func (r *Renderer) createChunkBuffers(mesh *ChunkMeshData) {
 	r.gl.Call("bufferData", r.gl.Get("ARRAY_BUFFER"), vertexData, r.gl.Get("STATIC_DRAW"))
 
 	// Set vertex attributes
-	// Position attribute (location 0)
 	posLoc := r.gl.Call("getAttribLocation", r.shaderProgram, "aPos")
 	r.gl.Call("enableVertexAttribArray", posLoc)
 	r.gl.Call("vertexAttribPointer", posLoc, 3, r.gl.Get("FLOAT"), false, 6*4, 0)
 
-	// Color attribute (location 1)
 	colorLoc := r.gl.Call("getAttribLocation", r.shaderProgram, "aColor")
 	r.gl.Call("enableVertexAttribArray", colorLoc)
 	r.gl.Call("vertexAttribPointer", colorLoc, 3, r.gl.Get("FLOAT"), false, 6*4, 3*4)

@@ -14,9 +14,6 @@ A browser-based voxel sandbox game built with Go and WebGL. Explore, build, and 
 
 ## Quick Start
 
-Play directly in your browser at: [tesselbox.io](https://tesselbox.io)
-
-Or run locally:
 
 ```bash
 # Build web version

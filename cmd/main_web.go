@@ -43,6 +43,11 @@ func main() {
 
 	js.Global().Set("render", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if renderer != nil {
+			// Update meshes from chunk manager
+			if world := controller.GetWorld(); world != nil {
+				world.GetChunkManager().UpdateEngineWithMeshes(renderer)
+			}
+
 			// Update camera from player
 			if player := controller.GetPlayer(); player != nil {
 				pos := player.GetPosition()

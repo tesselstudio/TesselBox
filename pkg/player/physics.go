@@ -65,49 +65,43 @@ func (p *Player) resolveCollisions(newPos types.Vec3) types.Vec3 {
 		types.NewVec3(newPos.X+width/2, newPos.Y+height, newPos.Z+width/2),
 	)
 
-	// Check for collisions
+	// Check for collisions with hex prism shaped blocks
+	// Hex prisms have radius 0.5, so we check a larger area
 	for x := minX; x <= maxX; x++ {
 		for y := minY; y <= maxY; y++ {
 			for z := minZ; z <= maxZ; z++ {
 				block := p.worldRef.GetBlock(x, y, z)
-				if block.ID == 0 { // Air block
+				if block.ID == 0 || !block.IsSolid() { // Air or non-solid block
 					continue
 				}
 
-				// Create AABB for block
+				// Hex prism AABB: center at (x, y+0.5, z) with radius ~0.5 in XZ
+				// Approximate as cube with padding for hex shape
 				blockAABB := NewAABB(
 					types.NewVec3(float32(x)-0.5, float32(y)-0.5, float32(z)-0.5),
 					types.NewVec3(float32(x)+0.5, float32(y)+0.5, float32(z)+0.5),
 				)
 
 				if playerAABB.Intersects(blockAABB) {
-
-					// Resolve collision by pushing player out
-					// Find the axis of least penetration
 					dx := minOverlap(playerAABB.Min.X, playerAABB.Max.X, blockAABB.Min.X, blockAABB.Max.X)
 					dy := minOverlap(playerAABB.Min.Y, playerAABB.Max.Y, blockAABB.Min.Y, blockAABB.Max.Y)
 					dz := minOverlap(playerAABB.Min.Z, playerAABB.Max.Z, blockAABB.Min.Z, blockAABB.Max.Z)
 
-					// Prioritize Y-axis resolution for ground collision to prevent sinking
+					// Prioritize Y-axis resolution for ground collision
 					if dy < 0 && math.Abs(float64(dy)) < 0.5 {
-						// Player is falling into block from above - push up immediately
 						newPos.Y = blockAABB.Max.Y + 0.001
 						p.velocity.Y = 0
 						p.onGround = true
 						p.jumping = false
-						println("🔍 COLLISION DEBUG: Pushed player up from block at Y:", blockAABB.Max.Y)
 					} else {
-						// Resolve on the axis with least penetration
 						if math.Abs(float64(dx)) < math.Abs(float64(dy)) && math.Abs(float64(dx)) < math.Abs(float64(dz)) {
-							// X axis
 							if dx > 0 {
 								newPos.X = blockAABB.Max.X + width/2 + 0.001
 							} else {
 								newPos.X = blockAABB.Min.X - width/2 - 0.001
 							}
-							p.velocity.X = 0 // Stop velocity in that direction
+							p.velocity.X = 0
 						} else if math.Abs(float64(dy)) < math.Abs(float64(dz)) {
-							// Y axis
 							if dy > 0 {
 								newPos.Y = blockAABB.Max.Y + 0.001
 								p.velocity.Y = 0
@@ -115,10 +109,9 @@ func (p *Player) resolveCollisions(newPos types.Vec3) types.Vec3 {
 								p.jumping = false
 							} else {
 								newPos.Y = blockAABB.Min.Y - height - 0.001
-								p.velocity.Y = 0 // Hit head
+								p.velocity.Y = 0
 							}
 						} else {
-							// Z axis
 							if dz > 0 {
 								newPos.Z = blockAABB.Max.Z + width/2 + 0.001
 							} else {
@@ -158,11 +151,9 @@ func (p *Player) checkOnGround() bool {
 		return false
 	}
 
-	// Check block below player feet
 	checkDistance := float32(0.1)
 	blockY := int(math.Floor(float64(p.position.Y - checkDistance)))
 
-	// Get nearby X and Z positions
 	checkRadius := 0.2
 	for dx := -checkRadius; dx <= checkRadius; dx += 0.2 {
 		for dz := -checkRadius; dz <= checkRadius; dz += 0.2 {
@@ -170,14 +161,12 @@ func (p *Player) checkOnGround() bool {
 			blockZ := int(math.Round(float64(p.position.Z + float32(dz))))
 
 			block := p.worldRef.GetBlock(blockX, blockY, blockZ)
-			if block.ID != 0 { // Found solid ground
-				println("🔍 PHYSICS DEBUG: Found ground at Y:", blockY, "Player Y:", p.position.Y, "Block ID:", block.ID)
+			if block.IsSolid() {
 				return true
 			}
 		}
 	}
 
-	println("🔍 PHYSICS DEBUG: No ground found below player at Y:", p.position.Y)
 	return false
 }
 
@@ -225,19 +214,16 @@ func (p *Player) CheckBlockCollision(blockID world.BlockID) bool {
 
 // IsInWater checks if player is in water
 func (p *Player) IsInWater() bool {
-	// Check if player is submerged in water (BlockID 10)
-	return p.CheckBlockCollision(world.BlockID(10))
+	return p.CheckBlockCollision(world.BlockIDWater)
 }
 
 // IsInLava checks if player is in lava
 func (p *Player) IsInLava() bool {
-	// Check if player is in lava (BlockID 11)
 	return p.CheckBlockCollision(world.BlockID(11))
 }
 
 // IsInFire checks if player is in fire
 func (p *Player) IsInFire() bool {
-	// Check if player is in fire (BlockID 12)
 	return p.CheckBlockCollision(world.BlockID(12))
 }
 
