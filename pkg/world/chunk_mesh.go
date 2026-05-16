@@ -60,6 +60,9 @@ func (b *ChunkMeshBuilder) BuildMesh() *ChunkMesh {
 				// Generate face-based colors for better 3D visualization
 				faceColors := b.generateFaceColors(block.ID)
 
+				// Save current vertex count as base index
+				baseIndex := uint32(len(vertices))
+
 				// Append vertices
 				blockVerts := prism.GenerateVertices()
 				vertices = append(vertices, blockVerts...)
@@ -67,7 +70,7 @@ func (b *ChunkMeshBuilder) BuildMesh() *ChunkMesh {
 				// Append indices
 				blockIndices := prism.GenerateIndices()
 				for _, index := range blockIndices {
-					indices = append(indices, uint32(len(vertices))+index)
+					indices = append(indices, baseIndex+index)
 				}
 
 				// Append normals
@@ -140,12 +143,11 @@ func (b *ChunkMeshBuilder) isBlockVisible(x, y, z int) bool {
 
 // generateFaceColors creates different colors for each face of a block
 func (b *ChunkMeshBuilder) generateFaceColors(id BlockID) []types.Color {
-	colors := make([]types.Color, 24) // 24 vertices for hexagonal prism
+	colors := make([]types.Color, 12) // 12 vertices for hexagonal prism (6 top + 6 bottom)
 
 	// Base color for this block type
 	baseColor := b.getBlockColor(id)
 
-	// Create variations for different faces
 	// Top face (vertices 0-5) - lighter
 	topColor := lightenColor(baseColor, 0.3)
 	for i := 0; i < 6; i++ {
@@ -156,16 +158,6 @@ func (b *ChunkMeshBuilder) generateFaceColors(id BlockID) []types.Color {
 	bottomColor := darkenColor(baseColor, 0.3)
 	for i := 6; i < 12; i++ {
 		colors[i] = bottomColor
-	}
-
-	// Side faces (vertices 12-23) - different shades for each side
-	for i := 0; i < 6; i++ {
-		// Each side has 2 vertices, create alternating pattern
-		sideColor1 := adjustHue(baseColor, float32(i)*30)    // Different hue for each side
-		sideColor2 := adjustHue(baseColor, float32(i)*30+15) // Slight variation
-
-		colors[12+i*2] = sideColor1   // First vertex of side
-		colors[12+i*2+1] = sideColor2 // Second vertex of side
 	}
 
 	return colors

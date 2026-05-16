@@ -11,7 +11,7 @@ type Manager struct {
 	mu sync.RWMutex
 
 	// Audio engines
-	sfxEngine   *SFKEngine
+	sfxEngine   *SFXEngine
 	musicEngine *MusicEngine
 
 	// Settings
@@ -59,7 +59,7 @@ func (m *Manager) Initialize() error {
 	}
 
 	// Initialize SFX engine (using beep for now)
-	m.sfxEngine = NewSFKEngine()
+	m.sfxEngine = NewSFXEngine()
 	if err := m.sfxEngine.Initialize(); err != nil {
 		return fmt.Errorf("failed to initialize SFX engine: %w", err)
 	}

@@ -25,9 +25,9 @@ func NewHexPrism(center types.Vec3, radius, height types.Float) *HexPrism {
 }
 
 // GenerateVertices creates the vertex data for the hexagonal prism
-// Returns 24 vertices: 6 top hexagon + 6 bottom hexagon + 12 side rectangles
+// Returns 12 vertices: 6 top hexagon + 6 bottom hexagon
 func (h *HexPrism) GenerateVertices() []types.Vec3 {
-	vertices := make([]types.Vec3, 24)
+	vertices := make([]types.Vec3, 12)
 
 	// Generate hexagonal points
 	hexPoints := h.generateHexagonPoints()
@@ -48,16 +48,6 @@ func (h *HexPrism) GenerateVertices() []types.Vec3 {
 			h.Center.Y-float32(h.Height)/2,
 			hexPoints[i].Y,
 		)
-	}
-
-	// Side rectangle vertices (indices 12-23)
-	// Each side has 4 vertices, but we'll create them as triangles later
-	for i := 0; i < 6; i++ {
-		next := (i + 1) % 6
-
-		// Top edge vertices
-		vertices[12+i*2] = vertices[i]      // Current top vertex
-		vertices[12+i*2+1] = vertices[next] // Next top vertex
 	}
 
 	return vertices
@@ -133,7 +123,7 @@ func (h *HexPrism) GenerateIndices() []uint32 {
 
 // GenerateNormals creates normal vectors for each vertex
 func (h *HexPrism) GenerateNormals() []types.Vec3 {
-	normals := make([]types.Vec3, 24)
+	normals := make([]types.Vec3, 12)
 
 	// Top hexagon normals (pointing up)
 	for i := 0; i < 6; i++ {
@@ -145,23 +135,12 @@ func (h *HexPrism) GenerateNormals() []types.Vec3 {
 		normals[i+6] = types.NewVec3(0, -1, 0)
 	}
 
-	// Side normals (pointing outward)
-	hexPoints := h.generateHexagonPoints()
-	for i := 0; i < 6; i++ {
-		// Calculate outward normal for this side (already normalized)
-		normal := types.NewVec3(hexPoints[i].X, 0, hexPoints[i].Y)
-
-		// Apply to both vertices of this side
-		normals[12+i*2] = normal
-		normals[12+i*2+1] = normal
-	}
-
 	return normals
 }
 
 // GenerateUVCoordinates creates UV mapping for the hexagonal prism
 func (h *HexPrism) GenerateUVCoordinates() []types.Vec2 {
-	uvs := make([]types.Vec2, 24)
+	uvs := make([]types.Vec2, 12)
 
 	// Top hexagon UVs
 	for i := 0; i < 6; i++ {
@@ -174,16 +153,6 @@ func (h *HexPrism) GenerateUVCoordinates() []types.Vec2 {
 	// Bottom hexagon UVs (same as top)
 	for i := 0; i < 6; i++ {
 		uvs[i+6] = uvs[i]
-	}
-
-	// Side UVs (simple mapping)
-	for i := 0; i < 6; i++ {
-		// Each side gets a strip of UV coordinates
-		uStart := types.Float(float64(i)) / 6.0
-		uEnd := types.Float(float64(i+1)) / 6.0
-
-		uvs[12+i*2] = types.NewVec2(float32(uStart), 0)
-		uvs[12+i*2+1] = types.NewVec2(float32(uEnd), 0)
 	}
 
 	return uvs

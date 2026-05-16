@@ -71,8 +71,9 @@ type Chunk struct {
 	modified bool
 
 	// Mesh data for rendering
-	meshDirty bool
-	mesh      *ChunkMesh
+	meshDirty    bool
+	meshUploaded bool
+	mesh         *ChunkMesh
 
 	// Biome data
 	biome BiomeType
@@ -127,6 +128,7 @@ func (c *Chunk) SetBlock(x, y, z int, block BlockData) {
 	if oldBlock.ID != block.ID {
 		c.modified = true
 		c.meshDirty = true
+		c.meshUploaded = false
 
 		// Update heightmap
 		if block.IsSolid() {
@@ -216,6 +218,21 @@ func (c *Chunk) SetMesh(mesh *ChunkMesh) {
 	defer c.mu.Unlock()
 	c.mesh = mesh
 	c.meshDirty = false
+	c.meshUploaded = false
+}
+
+// IsMeshUploaded returns true if chunk mesh has been uploaded to the engine
+func (c *Chunk) IsMeshUploaded() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.meshUploaded
+}
+
+// MarkMeshUploaded marks the chunk mesh as uploaded
+func (c *Chunk) MarkMeshUploaded() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.meshUploaded = true
 }
 
 // GetBiome returns the chunk's biome
@@ -272,6 +289,7 @@ func (c *Chunk) Fill(block BlockData) {
 
 	c.modified = true
 	c.meshDirty = true
+	c.meshUploaded = false
 }
 
 // LocalToWorld converts local chunk coordinates to world coordinates

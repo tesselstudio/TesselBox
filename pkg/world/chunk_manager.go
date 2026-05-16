@@ -319,44 +319,19 @@ func (cm *ChunkManager) UpdateEngineWithMeshes(engine interface{}) {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
 
-	println("🔍 DEBUG: UpdateEngineWithMeshes called with", len(cm.chunks), "chunks")
-
 	// Type assert to get engine methods
 	type EngineInterface interface {
-		AddChunkMesh(coord ChunkCoord, meshData interface{})
+		AddChunkMesh(coord ChunkCoord, vertices []float32, indices []uint32)
 		RemoveChunkMesh(coord ChunkCoord)
 	}
 
 	if engineInterface, ok := engine.(EngineInterface); ok {
-		meshesTransferred := 0
 		for coord, chunk := range cm.chunks {
-			if chunk.mesh != nil && len(chunk.mesh.InterleavedVertices) > 0 {
-				// Convert chunk mesh to engine format using interleaved vertices
-				meshData := map[string]interface{}{
-					"Vertices":    chunk.mesh.InterleavedVertices,
-					"Indices":     chunk.mesh.Indices,
-					"VertexCount": int32(len(chunk.mesh.InterleavedVertices) / 6), // 6 floats per vertex (pos + color)
-					"IndexCount":  int32(len(chunk.mesh.Indices)),
-				}
-
-				println("🔍 DEBUG: Transferring mesh for chunk", coord.X, coord.Z,
-					"- Vertices:", len(chunk.mesh.InterleavedVertices)/6,
-					"Indices:", len(chunk.mesh.Indices))
-
-				engineInterface.AddChunkMesh(coord, meshData)
-				meshesTransferred++
-			} else {
-				if chunk.mesh == nil {
-					println("🔍 DEBUG: Chunk", coord.X, coord.Z, "has no mesh")
-				} else {
-					println("🔍 DEBUG: Chunk", coord.X, coord.Z, "has empty mesh (", len(chunk.mesh.InterleavedVertices), "vertices)")
-				}
+			if !chunk.IsMeshUploaded() && chunk.mesh != nil && len(chunk.mesh.InterleavedVertices) > 0 {
+				engineInterface.AddChunkMesh(coord, chunk.mesh.InterleavedVertices, chunk.mesh.Indices)
+				chunk.MarkMeshUploaded()
 			}
 		}
-
-		println("🔍 DEBUG: Transferred", meshesTransferred, "meshes to engine")
-	} else {
-		println("❌ DEBUG: Engine interface assertion failed!")
 	}
 }
 

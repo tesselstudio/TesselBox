@@ -1,15 +1,8 @@
-# Binaries
+# WebAssembly/WASM
+*.wasm
+
+# Build outputs
 dist/
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-tesselbox
-tesselbox-*
-main
-launch_game
-test_hexagonal
 
 # Test binary, built with `go test -c`
 *.test
@@ -33,10 +26,6 @@ go.work
 .DS_Store
 Thumbs.db
 
-# Build artifacts
-*.o
-*.a
-
 # Temporary files
 *.tmp
 *.log
@@ -47,8 +36,6 @@ Thumbs.db
 .env.production
 *.key
 *.pem
-oauth_tokens.json
 
-# Game saves (optional - uncomment if you don't want to track saves)
-# saves/
-# worlds/
+# Game saves
+saves/

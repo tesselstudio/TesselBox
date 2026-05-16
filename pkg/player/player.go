@@ -57,6 +57,9 @@ type Player struct {
 	// Footstep tracking
 	lastFootstepTime time.Time
 	lastPosition     types.Vec3
+
+	// Debug frame counter
+	frameCount int
 }
 
 // NewPlayer creates a new player
@@ -119,6 +122,9 @@ func (p *Player) Update(deltaTime float64) {
 
 	now := time.Now()
 	dt := float32(now.Sub(p.lastUpdate).Seconds())
+	if dt > 0.1 {
+		dt = 0.1 // Cap deltaTime to prevent large jumps
+	}
 	p.lastUpdate = now
 
 	// Apply gravity
@@ -138,22 +144,15 @@ func (p *Player) Update(deltaTime float64) {
 
 	p.position = newPos
 
-	// Check if on ground
+	// Check if on ground (after position update)
 	p.onGround = p.checkOnGround()
 
 	// Apply friction
 	p.velocity.X = p.velocity.X * 0.9
 	p.velocity.Z = p.velocity.Z * 0.9
 
-	if p.onGround {
+	if p.onGround && p.velocity.Y < 0 {
 		p.velocity.Y = 0
-	}
-
-	// Debug output every 60 frames (approximately 1 second)
-	var frameCount int
-	frameCount++
-	if frameCount%60 == 0 {
-		println("🔍 PLAYER DEBUG: Pos Y:", p.position.Y, "OnGround:", p.onGround, "Vel Y:", p.velocity.Y)
 	}
 
 	// Update survival stats
