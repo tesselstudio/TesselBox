@@ -387,7 +387,7 @@ func (hm *HazardManager) GetHazardsInArea(position HazardPosition, radius float3
 		}
 		
 		distance := hm.calculateDistance(position, hazard.Position)
-		if distance <= hazard.Position.Z+radius {
+		if distance <= hazard.Radius+radius {
 			affectingHazards = append(affectingHazards, hazard)
 		}
 	}

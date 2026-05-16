@@ -5,10 +5,10 @@ import (
 	"sync"
 )
 
-// SFKEngine handles sound effect playback using a simple Go-based audio engine
+// SFXEngine handles sound effect playback using a simple Go-based audio engine
 // This is a simplified implementation that uses a stub backend
 // In production, this would integrate with oto, beep, or Kaiju's audio system
-type SFKEngine struct {
+type SFXEngine struct {
 	mu       sync.RWMutex
 	loaded   bool
 	volume   float32
@@ -32,16 +32,16 @@ const (
 	FormatMP3
 )
 
-// NewSFKEngine creates a new sound effects engine
-func NewSFKEngine() *SFKEngine {
-	return &SFKEngine{
+// NewSFXEngine creates a new sound effects engine
+func NewSFXEngine() *SFXEngine {
+	return &SFXEngine{
 		sources: make(map[string]*AudioSource),
 		volume:  1.0,
 	}
 }
 
 // Initialize sets up the audio engine
-func (e *SFKEngine) Initialize() error {
+func (e *SFXEngine) Initialize() error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -59,7 +59,7 @@ func (e *SFKEngine) Initialize() error {
 }
 
 // Shutdown cleans up audio resources
-func (e *SFKEngine) Shutdown() {
+func (e *SFXEngine) Shutdown() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -76,7 +76,7 @@ func (e *SFKEngine) Shutdown() {
 }
 
 // Play plays a sound at the specified volume
-func (e *SFKEngine) Play(sound *Sound, volume float32) {
+func (e *SFXEngine) Play(sound *Sound, volume float32) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
@@ -99,7 +99,7 @@ func (e *SFKEngine) Play(sound *Sound, volume float32) {
 }
 
 // PlayWithPan plays a sound with stereo panning
-func (e *SFKEngine) PlayWithPan(sound *Sound, volume, pan float32) {
+func (e *SFXEngine) PlayWithPan(sound *Sound, volume, pan float32) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
@@ -119,7 +119,7 @@ func (e *SFKEngine) PlayWithPan(sound *Sound, volume, pan float32) {
 }
 
 // LoadSource loads an audio source from file data
-func (e *SFKEngine) LoadSource(name string, data []byte, format AudioFormat) (*AudioSource, error) {
+func (e *SFXEngine) LoadSource(name string, data []byte, format AudioFormat) (*AudioSource, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -134,7 +134,7 @@ func (e *SFKEngine) LoadSource(name string, data []byte, format AudioFormat) (*A
 }
 
 // UnloadSource removes an audio source
-func (e *SFKEngine) UnloadSource(name string) {
+func (e *SFXEngine) UnloadSource(name string) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -142,7 +142,7 @@ func (e *SFKEngine) UnloadSource(name string) {
 }
 
 // SetVolume sets the engine volume
-func (e *SFKEngine) SetVolume(volume float32) {
+func (e *SFXEngine) SetVolume(volume float32) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -150,7 +150,7 @@ func (e *SFKEngine) SetVolume(volume float32) {
 }
 
 // StopAll stops all playing sounds
-func (e *SFKEngine) StopAll() {
+func (e *SFXEngine) StopAll() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 

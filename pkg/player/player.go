@@ -57,6 +57,9 @@ type Player struct {
 	// Footstep tracking
 	lastFootstepTime time.Time
 	lastPosition     types.Vec3
+
+	// Debug frame counter
+	frameCount int
 }
 
 // NewPlayer creates a new player
@@ -150,9 +153,8 @@ func (p *Player) Update(deltaTime float64) {
 	}
 
 	// Debug output every 60 frames (approximately 1 second)
-	var frameCount int
-	frameCount++
-	if frameCount%60 == 0 {
+	p.frameCount++
+	if p.frameCount%60 == 0 {
 		println("🔍 PLAYER DEBUG: Pos Y:", p.position.Y, "OnGround:", p.onGround, "Vel Y:", p.velocity.Y)
 	}
 

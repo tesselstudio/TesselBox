@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TesselBox - Browser Version</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #4ade80;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        #loading p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+        
+        #game-canvas {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+        }
+        
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        
+        #start-screen h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #4ade80, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        #start-screen p {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+        
+        #start-btn {
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            background: linear-gradient(45deg, #4ade80, #22d3ee);
+            border: none;
+            border-radius: 8px;
+            color: #1a1a2e;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        #start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(74, 222, 128, 0.3);
+        }
+        
+        #controls-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            display: none;
+        }
+        
+        #controls-info h3 {
+            color: #4ade80;
+            margin-bottom: 0.5rem;
+        }
+        
+        #controls-info ul {
+            list-style: none;
+        }
+        
+        #controls-info li {
+            margin: 0.3rem 0;
+        }
+        
+        #error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(220, 38, 38, 0.9);
+            padding: 2rem;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Loading TesselBox...</p>
+        </div>
+        
+        <canvas id="game-canvas"></canvas>
+        
+        <div id="ui-overlay">
+            <div id="controls-info">
+                <h3>Controls</h3>
+                <ul>
+                    <li>WASD - Move</li>
+                    <li>Space - Jump</li>
+                    <li>Mouse - Look around</li>
+                    <li>Left Click - Break block</li>
+                    <li>Right Click - Place block</li>
+                    <li>E - Inventory</li>
+                    <li>ESC - Pause</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div id="start-screen">
+            <h1>TesselBox</h1>
+            <p>A voxel-based sandbox game in your browser</p>
+            <button id="start-btn">Start Game</button>
+        </div>
+        
+        <div id="error-message">
+            <h2>Error</h2>
+            <p id="error-text"></p>
+        </div>
+    </div>
+    
+    <script src="wasm_exec.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
